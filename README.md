@@ -27,7 +27,7 @@ Secrets (`talos/secrets.yaml`, `controlplane.yaml`, `worker.yaml`, `talosconfig`
 
 ## Hard-won lessons
 
-- **iPXE scripts need `#!ipxe` at byte 0.** A copy-paste that prepended two spaces silently broke script detection — iPXE fetched it, then did nothing.
+
 - **The Talos kernel cmdline must come from the Image Factory `cmdline-<platform>` asset.** Hand-rolling it fails the KSPP `systemRequirements` check (`slab_nomerge`, `pti=on`, …).
 - **`talosctl gen config --force` rotates the CA every run.** Regenerating *after* applying orphans the node's trust (`x509: certificate signed by unknown authority`). Fix: a persistent `secrets.yaml` and always `--with-secrets`.
 - **Linux interface names are not stable across boots on this hardware** (`enp88s0` → `enp87s0`). Bind networking by MAC via `deviceSelector.hardwareAddr`, never by interface name. Getting it wrong cascaded: static IP on the wrong NIC → live NIC DHCP-only → no NTP → wrong clock → TLS "expired certificate" → locked-out node.
