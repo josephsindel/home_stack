@@ -1,0 +1,10 @@
+# Talos secrets — contain CA private keys / bootstrap token. SOPS-encrypt before committing (Phase 5).
+talos/controlplane.yaml
+talos/worker.yaml
+talos/talosconfig
+talos/secrets.yaml
+talos/kubeconfig
+
+# Local tooling / OS cruft
+.claude/
+.DS_Store

@@ -1,0 +1,22 @@
+name: pxe
+
+services:
+  dnsmasq:
+    build: ./dnsmasq
+    container_name: pxe-dnsmasq
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+    restart: unless-stopped
+    volumes:
+      - /volume1/pxe/dnsmasq/dnsmasq.conf:/etc/dnsmasq.conf:ro
+      - /volume1/pxe/tftp:/srv/tftp:ro
+
+  http:
+    image: nginx:alpine
+    container_name: pxe-http
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - /volume1/pxe/http:/usr/share/nginx/html:ro

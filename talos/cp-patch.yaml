@@ -1,0 +1,24 @@
+machine:
+  install:
+    disk: /dev/nvme0n1
+  network:
+    nameservers:
+      - 1.1.1.1
+    interfaces:
+      - deviceSelector:
+          hardwareAddr: "38:05:25:37:a1:67"
+        dhcp: false
+        addresses:
+          - 192.168.87.101/24
+        routes:
+          - network: 0.0.0.0/0
+            gateway: 192.168.87.1
+        vip:
+          ip: 192.168.87.100
+cluster:
+  allowSchedulingOnControlPlanes: true
+  network:
+    cni:
+      name: none
+  proxy:
+    disabled: true
