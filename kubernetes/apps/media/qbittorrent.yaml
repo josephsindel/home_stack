@@ -72,6 +72,25 @@ spec:
                   initialDelaySeconds: 30
                   periodSeconds: 15
                   failureThreshold: 12
+          # Syncs gluetun's Proton-forwarded port -> qBittorrent listen port.
+          # Reads the shared port file; sets via the localhost API (auth bypassed).
+          port-sync:
+            image:
+              repository: curlimages/curl
+              tag: latest
+            command: ["/bin/sh", "-c"]
+            args:
+              - |
+                while true; do
+                  P=$(cat /tmp/gluetun/forwarded_port 2>/dev/null);
+                  if [ -n "$P" ]; then
+                    cur=$(curl -s http://localhost:8080/api/v2/app/preferences | sed -n 's/.*"listen_port":\([0-9]*\).*/\1/p');
+                    if [ "$P" != "$cur" ]; then
+                      curl -s -d "json={\"listen_port\":$P}" http://localhost:8080/api/v2/app/setPreferences >/dev/null 2>&1 && echo "synced listen_port=$P";
+                    fi;
+                  fi;
+                  sleep 60;
+                done
     service:
       app:
         controller: qbittorrent
@@ -114,3 +133,13 @@ spec:
           qbittorrent:
             gluetun:
               - path: /dev/net/tun
+      # Shared scratch so port-sync can read gluetun's forwarded_port file.
+      gluetun-data:
+        enabled: true
+        type: emptyDir
+        advancedMounts:
+          qbittorrent:
+            gluetun:
+              - path: /tmp/gluetun
+            port-sync:
+              - path: /tmp/gluetun
