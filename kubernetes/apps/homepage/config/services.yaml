@@ -115,9 +115,10 @@
       description: Offline knowledge server - Wikipedia, courses, notes, maps (use :8095 http)
       siteMonitor: http://192.168.86.10:8095/api/health
   - RomM:
-      href: https://mediaserver.tailc89bc2.ts.net:8503/
+      href: https://romm.tailc89bc2.ts.net/
       icon: mdi-gamepad-variant
-      description: ROM library manager
+      description: ROM library manager (k8s)
+      siteMonitor: http://192.168.86.236:8080/
   - Traefik:
       href: http://192.168.86.10:8088/dashboard/
       icon: traefik.png
