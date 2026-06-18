@@ -9,3 +9,5 @@ resources:
   - bazarr.yaml
   - sabnzbd.yaml
   - flaresolverr.yaml
+  - secret-arr-keys.sops.yaml
+  - unpackerr.yaml
