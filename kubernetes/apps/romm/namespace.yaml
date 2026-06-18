@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: romm
+  labels:
+    # MariaDB's entrypoint runs as root to init/chown the datadir before
+    # dropping to mysql; baseline permits that (restricted would block it).
+    pod-security.kubernetes.io/enforce: baseline

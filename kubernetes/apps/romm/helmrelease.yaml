@@ -1,0 +1,131 @@
+# RomM (ROM library manager) migrated off mediaserver Docker. Two controllers:
+# mariadb (DB, node-local local-path storage — NFS corrupts DBs) and romm (app,
+# bundles its own Redis at /redis-data). ROM library/assets live on the Synology
+# NFS share (subPaths of the romm-nfs PVC). LB .236 + Tailscale ingress.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: romm
+  namespace: romm
+spec:
+  interval: 1h
+  install:
+    remediation: { retries: 3 }
+  upgrade:
+    remediation: { retries: 3 }
+  chart:
+    spec:
+      chart: app-template
+      version: "5.0.1"
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  values:
+    controllers:
+      mariadb:
+        containers:
+          app:
+            image:
+              repository: mariadb
+              tag: "11.8"
+            env:
+              MARIADB_DATABASE: romm
+              MARIADB_USER: romm
+              TZ: America/Los_Angeles
+              MARIADB_PASSWORD:
+                valueFrom:
+                  secretKeyRef: { name: romm-secret, key: MARIADB_PASSWORD }
+              MARIADB_ROOT_PASSWORD:
+                valueFrom:
+                  secretKeyRef: { name: romm-secret, key: MARIADB_ROOT_PASSWORD }
+            probes:
+              liveness:  { enabled: true, custom: true, spec: { tcpSocket: { port: 3306 }, initialDelaySeconds: 30, periodSeconds: 20 } }
+              readiness: { enabled: true, custom: true, spec: { tcpSocket: { port: 3306 }, initialDelaySeconds: 15, periodSeconds: 10 } }
+      romm:
+        containers:
+          app:
+            image:
+              repository: rommapp/romm
+              tag: "latest"
+            env:
+              DB_HOST: romm-db
+              DB_NAME: romm
+              DB_USER: romm
+              ROMM_BASE_URL: https://romm.tailc89bc2.ts.net
+              TZ: America/Los_Angeles
+              HASHEOUS_API_ENABLED: "true"
+              PLAYMATCH_API_ENABLED: "true"
+              LAUNCHBOX_API_ENABLED: "true"
+              DB_PASSWD:
+                valueFrom:
+                  secretKeyRef: { name: romm-secret, key: DB_PASSWD }
+              ROMM_AUTH_SECRET_KEY:
+                valueFrom:
+                  secretKeyRef: { name: romm-secret, key: ROMM_AUTH_SECRET_KEY }
+            probes:
+              liveness:  { enabled: true, custom: true, spec: { tcpSocket: { port: 8080 }, initialDelaySeconds: 60, periodSeconds: 30, failureThreshold: 6 } }
+              readiness: { enabled: true, custom: true, spec: { tcpSocket: { port: 8080 }, initialDelaySeconds: 30, periodSeconds: 15, failureThreshold: 12 } }
+    service:
+      romm-db:
+        controller: mariadb
+        ports:
+          mysql: { port: 3306 }
+      romm:
+        controller: romm
+        type: LoadBalancer
+        annotations:
+          lbipam.cilium.io/ips: "192.168.86.236"
+        ports:
+          http: { port: 8080, targetPort: 8080 }
+    persistence:
+      mariadb-data:
+        enabled: true
+        storageClass: local-path
+        accessMode: ReadWriteOnce
+        size: 2Gi
+        advancedMounts:
+          mariadb:
+            app:
+              - path: /var/lib/mysql
+      resources:
+        enabled: true
+        storageClass: local-path
+        accessMode: ReadWriteOnce
+        size: 2Gi
+        advancedMounts:
+          romm:
+            app:
+              - path: /romm/resources
+      config:
+        enabled: true
+        type: configMap
+        name: romm-config
+        advancedMounts:
+          romm:
+            app:
+              - path: /romm/config/config.yml
+                subPath: config.yml
+                readOnly: true
+      redis-data:
+        enabled: true
+        storageClass: local-path
+        accessMode: ReadWriteOnce
+        size: 1Gi
+        advancedMounts:
+          romm:
+            app:
+              - path: /redis-data
+      nas:
+        enabled: true
+        existingClaim: romm-nfs
+        advancedMounts:
+          romm:
+            app:
+              - path: /romm/library
+                subPath: content/romm/library
+              - path: /romm/assets
+                subPath: content/romm/assets
+              - path: /romm/library/roms/3ds
+                subPath: content/torrents/retroid-incoming/N3DS
+                readOnly: true

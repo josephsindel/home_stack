@@ -1,0 +1,35 @@
+# Static NFS mount of the Synology share root, so RomM can subPath into the
+# existing library/assets/ROM-source dirs under content/ (same share the
+# mediaserver bind-mounted at /mnt/nas). Use the IP, not synology.home.arpa —
+# Talos nodes resolve via 1.1.1.1 and can't see *.home.arpa.
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: romm-nfs
+spec:
+  capacity:
+    storage: 1Ti
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  mountOptions:
+    - nfsvers=4.1
+    - hard
+  nfs:
+    server: 192.168.86.12
+    path: /volume1/NetBackup
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: romm-nfs
+  namespace: romm
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: ""
+  volumeName: romm-nfs
+  resources:
+    requests:
+      storage: 1Ti

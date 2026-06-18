@@ -1,0 +1,10 @@
+# RomM config (migrated from mediaserver). Omitted sections use RomM defaults.
+exclude:
+  roms:
+    single_file:
+      names:
+        - ".*"
+        - "*.nfo"
+        - "*.txt"
+filesystem:
+  roms_folder: roms

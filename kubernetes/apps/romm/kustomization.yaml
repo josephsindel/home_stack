@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - secret.sops.yaml
+  - storage.yaml
+  - helmrelease.yaml
+  - ingress.yaml
+configMapGenerator:
+  - name: romm-config
+    namespace: romm
+    files:
+      - config/config.yml
+generatorOptions:
+  disableNameSuffixHash: true

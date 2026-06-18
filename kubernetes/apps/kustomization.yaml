@@ -8,4 +8,5 @@ resources:
   - media
   - monitoring
   - homepage
+  - romm
   - tailscale-operator
