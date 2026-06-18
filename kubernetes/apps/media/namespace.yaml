@@ -2,3 +2,8 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: media
+  labels:
+    # gluetun (qBittorrent VPN sidecar) needs NET_ADMIN + the /dev/net/tun hostPath,
+    # which the baseline PSS forbids. The *arr don't need it, but the label is
+    # namespace-scoped and privileged is a superset.
+    pod-security.kubernetes.io/enforce: privileged
