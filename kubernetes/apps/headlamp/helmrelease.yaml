@@ -1,0 +1,46 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: headlamp
+  namespace: headlamp
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: headlamp
+      version: "0.43.0"
+      sourceRef:
+        kind: HelmRepository
+        name: headlamp
+        namespace: flux-system
+  values:
+    # Flux plugin is copied in fresh on every pod start by the initContainer,
+    # so an emptyDir is enough — no PVC (avoids NFS root-squash chown + no default SC).
+    config:
+      pluginsDir: /build/plugins
+    initContainers:
+      - name: headlamp-plugins
+        image: ghcr.io/headlamp-k8s/headlamp-plugin-flux:latest
+        imagePullPolicy: Always
+        command:
+          - /bin/sh
+          - -c
+          - mkdir -p /build/plugins && cp -r /plugins/* /build/plugins/ && chown -R 100:101 /build
+        securityContext:
+          runAsNonRoot: false
+          privileged: false
+          runAsUser: 0
+          runAsGroup: 0
+        volumeMounts:
+          - mountPath: /build/plugins
+            name: headlamp-plugins
+    volumeMounts:
+      - mountPath: /build/plugins
+        name: headlamp-plugins
+    volumes:
+      - name: headlamp-plugins
+        emptyDir: {}
+    # Cilium LB-IPAM assigns an IP from home-lan-pool (.240-.250); L2 announces it.
+    service:
+      type: LoadBalancer
+      port: 80
