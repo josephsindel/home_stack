@@ -40,7 +40,11 @@ spec:
     volumes:
       - name: headlamp-plugins
         emptyDir: {}
-    # Cilium LB-IPAM assigns an IP from home-lan-pool (.240-.250); L2 announces it.
+    # Pinned to .245 (the IP LB-IPAM had auto-assigned) so the pool is fully
+    # deterministic — every LoadBalancer service in this repo pins its IP, which
+    # avoids float/collision when the .245-.254 pool is full.
     service:
       type: LoadBalancer
+      annotations:
+        lbipam.cilium.io/ips: "192.168.86.245"
       port: 80

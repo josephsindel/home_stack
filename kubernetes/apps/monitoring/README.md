@@ -12,7 +12,7 @@ dashboards, `ServiceMonitor`/`PrometheusRule`-equivalent CRDs all work).
 | `victoria-logs` | `victoria-logs-single` 0.13.8 | Log backend (30d), PVC-backed, no S3. Service `victorialogs:9428` |
 | `alloy` | `alloy` 1.10.0 | Log shipper DaemonSet (Promtail successor), collects via K8s API → VictoriaLogs |
 
-- **Grafana:** http://192.168.86.245/ (Cilium LoadBalancer; pool is `.245–.254`,
+- **Grafana:** http://192.168.86.254/ (Cilium LoadBalancer; pool is `.245–.254`,
   expand the `CiliumLoadBalancerIPPool` if you want more). Admin creds from the
   `monitoring-secrets` SOPS secret.
 - **Prometheus/vmui/Alertmanager UIs:** not exposed — reach via
