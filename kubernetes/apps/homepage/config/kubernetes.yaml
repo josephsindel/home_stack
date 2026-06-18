@@ -1,0 +1,3 @@
+---
+# Kubernetes service auto-discovery is not used; tiles are declared statically
+# in services.yaml. (Enabling it would need a ClusterRole + the kubernetes mode.)

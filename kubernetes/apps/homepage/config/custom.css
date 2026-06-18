@@ -1,0 +1,64 @@
+/* Equal-height tiles per row */
+.services-group ul {
+  align-items: stretch;
+}
+.services-group ul > li {
+  display: flex;
+  flex-direction: column;
+}
+.services-group ul > li > * {
+  flex: 1;
+}
+
+/* Tighter padding so short tiles dont look so empty */
+[id^="service-"] > div {
+  min-height: 5rem;
+}
+
+/* Group section header bigger */
+.services-group > h2 {
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+  margin-top: 1rem;
+}
+
+/* Make top host metrics span the same content width as the service tiles. */
+#widgets-wrap {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+  align-items: stretch;
+}
+#widgets-wrap > .information-widget-resources {
+  width: 100%;
+  max-width: none;
+}
+#widgets-wrap > .information-widget-resources > div:first-child {
+  justify-content: center;
+}
+@media (max-width: 1024px) {
+  #widgets-wrap {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 640px) {
+  #widgets-wrap {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Sonarr/Radarr long lists scroll bar (kept from before) */
+.services-group .grid > div > div > div .flex.flex-col,
+.services-group .grid > div > div > div ul,
+.services-group .grid > div > div > div ol,
+.services-group .grid > div > div > div table tbody {
+  max-height: 13rem;
+  overflow-y: auto;
+}
+
+/* Pretty thin scrollbars */
+*::-webkit-scrollbar { width: 6px; height: 6px; }
+*::-webkit-scrollbar-track { background: rgba(255,255,255,0.04); }
+*::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.20); border-radius: 3px; }
+*::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.35); }
+* { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.20) transparent; }

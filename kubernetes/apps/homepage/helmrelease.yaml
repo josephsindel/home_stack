@@ -1,0 +1,79 @@
+# Homepage dashboard, migrated off the mediaserver Docker stack into k8s.
+# Config lives in the kustomize-generated `homepage-config` ConfigMap (mounted
+# read-only at /app/config); API keys come from the SOPS `homepage-secret` and
+# are referenced in the config as {{HOMEPAGE_VAR_*}}. Homepage hot-reloads the
+# config files, so editing the ConfigMap is picked up without a pod restart.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: homepage
+  namespace: homepage
+spec:
+  interval: 1h
+  install:
+    remediation: { retries: 3 }
+  upgrade:
+    remediation: { retries: 3 }
+  chart:
+    spec:
+      chart: app-template
+      version: "5.0.1"
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  values:
+    controllers:
+      homepage:
+        containers:
+          app:
+            image:
+              repository: ghcr.io/gethomepage/homepage
+              tag: v1.13.2
+            env:
+              TZ: America/Los_Angeles
+              # v1.x requires an explicit allow-list for the Host header.
+              HOMEPAGE_ALLOWED_HOSTS: "192.168.86.235,homepage.home.arpa"
+            envFrom:
+              - secretRef:
+                  name: homepage-secret
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet: { path: /api/healthcheck, port: 3000 }
+                  initialDelaySeconds: 15
+                  periodSeconds: 30
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet: { path: /api/healthcheck, port: 3000 }
+                  initialDelaySeconds: 5
+                  periodSeconds: 10
+    service:
+      app:
+        controller: homepage
+        type: LoadBalancer
+        annotations:
+          lbipam.cilium.io/ips: "192.168.86.235"
+        ports:
+          http:
+            port: 80
+            targetPort: 3000
+    persistence:
+      config:
+        enabled: true
+        type: configMap
+        name: homepage-config
+        globalMounts:
+          - path: /app/config
+            readOnly: true
+      # Writable overlay so homepage can write /app/config/logs over the
+      # read-only ConfigMap mount (runs as root, default user).
+      logs:
+        enabled: true
+        type: emptyDir
+        globalMounts:
+          - path: /app/config/logs

@@ -1,0 +1,38 @@
+# Host resource widgets via Glances. Fetched server-side by the homepage pod
+# (no Tailscale), so all use LAN IPs, not *.ts.net.
+- glances:
+    version: 4
+    chart: false
+    expanded: false
+    cpu: true
+    mem: true
+    url: http://192.168.86.10:61208
+    label: mediaserver
+    disk: /rootfs
+- glances:
+    version: 4
+    chart: false
+    expanded: false
+    cpu: true
+    mem: true
+    url: http://192.168.86.12:61208
+    label: nas
+    disk: /
+- glances:
+    version: 4
+    chart: false
+    expanded: false
+    cpu: true
+    mem: true
+    url: http://192.168.86.11:61208
+    label: thor
+    disk: /rootfs
+- glances:
+    url: http://192.168.86.13:61208
+    version: 4
+    label: pi
+    chart: false
+    expanded: false
+    cpu: true
+    mem: true
+    disk: /

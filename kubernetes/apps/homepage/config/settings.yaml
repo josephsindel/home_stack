@@ -1,0 +1,50 @@
+title: home-infra
+favicon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/kubernetes.png
+theme: dark
+color: slate
+headerStyle: clean
+statusStyle: dot
+layout:
+  kubernetes:
+    style: row
+    columns: 4
+    header: true
+    icon: mdi-kubernetes
+  mediaserver:
+    style: row
+    columns: 5
+    header: true
+    icon: mdi-server
+  nomad:
+    style: row
+    columns: 3
+    header: true
+    icon: mdi-book-open-variant
+  network:
+    style: row
+    columns: 3
+    header: true
+    icon: mdi-lan
+  nas:
+    style: row
+    columns: 4
+    header: true
+    icon: mdi-nas
+  thor:
+    style: row
+    columns: 5
+    header: true
+    icon: mdi-brain
+  pi:
+    style: row
+    columns: 3
+    header: true
+    icon: mdi-raspberry-pi
+  ssh:
+    style: row
+    columns: 4
+    header: true
+    icon: mdi-console
+quicklaunch:
+  searchDescriptions: true
+  hideInternetSearch: true

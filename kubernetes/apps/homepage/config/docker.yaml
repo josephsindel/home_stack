@@ -1,0 +1,3 @@
+---
+# Docker integration unused: homepage runs in k8s, services are reached
+# via k8s DNS / LAN IPs. No docker socket mounted.
