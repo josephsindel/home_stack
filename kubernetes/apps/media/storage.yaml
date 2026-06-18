@@ -1,0 +1,39 @@
+# Static NFS PV → the EXISTING Synology library (not a fresh provisioned subdir).
+# Shared RWX across the *arr apps. Mounted read-only for now (parallel to the live
+# mediaserver stack); flipped to read-write at cutover when mediaserver is stopped.
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: media-nfs
+spec:
+  capacity:
+    storage: 1Ti                # nominal; NFS has no real quota here
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""          # static binding, no dynamic provisioner
+  mountOptions:
+    - nfsvers=4.1
+    - nconnect=4
+    - noatime
+    - hard
+  csi:
+    driver: nfs.csi.k8s.io
+    volumeHandle: media-nfs-netbackup-content   # unique, static
+    volumeAttributes:
+      server: "192.168.86.12"
+      share: /volume1/NetBackup
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: media
+  namespace: media
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: ""
+  volumeName: media-nfs
+  resources:
+    requests:
+      storage: 1Ti
