@@ -50,4 +50,4 @@ spec:
       media:
         enabled: true
         existingClaim: media
-        globalMounts: [{ path: /mnt/nas/content, readOnly: true }]
+        globalMounts: [{ path: /mnt/nas/content, subPath: content, readOnly: true }]
