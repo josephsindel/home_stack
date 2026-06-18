@@ -61,10 +61,10 @@ spec:
         type: LoadBalancer
         annotations:
           lbipam.cilium.io/ips: "192.168.86.235"
-          # Tailscale operator publishes this Service on the tailnet as
-          # homepage.tailc89bc2.ts.net (mobile app reaches it over Tailscale).
-          tailscale.com/expose: "true"
-          tailscale.com/hostname: "homepage"
+          # Tailnet access is via the Tailscale Ingress (serve-based), not the
+          # L4 `tailscale.com/expose` annotation: this cluster runs Cilium with
+          # kube-proxy replacement, where ClusterIP translation is socket-level
+          # and DNAT-forwarded tailnet packets bypass it. See ingress.yaml.
         ports:
           http:
             port: 80

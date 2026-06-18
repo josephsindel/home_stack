@@ -5,6 +5,7 @@ resources:
   - namespace.yaml
   - secret.sops.yaml
   - helmrelease.yaml
+  - ingress.yaml
 # Homepage config files -> ConfigMap. Stable name (no hash suffix) so the
 # HelmRelease can reference it; homepage hot-reloads on file change.
 configMapGenerator:

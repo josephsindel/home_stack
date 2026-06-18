@@ -1,0 +1,20 @@
+# Tailscale Ingress: exposes Homepage on the tailnet as
+# https://homepage.tailc89bc2.ts.net with a MagicDNS Let's Encrypt cert.
+# Serve-based (not the L4 `expose` annotation) so the tailscaled process dials
+# the backend Service itself — required on this Cilium kube-proxy-replacement
+# cluster, where DNAT-forwarded ClusterIP traffic isn't translated.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: homepage
+  namespace: homepage
+spec:
+  ingressClassName: tailscale
+  defaultBackend:
+    service:
+      name: homepage
+      port:
+        number: 80
+  tls:
+    - hosts:
+        - homepage
