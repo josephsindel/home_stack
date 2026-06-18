@@ -37,14 +37,14 @@ spec:
       enabled: true
       spec:
         retentionPeriod: "30d"
+        # VMSingle.spec.storage IS a PersistentVolumeClaimSpec directly — no
+        # volumeClaimTemplate wrapper (that's VMCluster/StatefulSet land).
         storage:
-          volumeClaimTemplate:
-            spec:
-              storageClassName: local-path
-              accessModes: ["ReadWriteOnce"]
-              resources:
-                requests:
-                  storage: 20Gi
+          accessModes: ["ReadWriteOnce"]
+          storageClassName: local-path
+          resources:
+            requests:
+              storage: 20Gi
 
     # --- Scraper -------------------------------------------------------------
     vmagent:
