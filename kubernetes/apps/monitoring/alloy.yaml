@@ -78,7 +78,11 @@ spec:
 
           loki.write "victorialogs" {
             endpoint {
-              url = "http://victorialogs.monitoring.svc:9428/insert/loki/api/v1/push"
+              // _msg_field tells VictoriaLogs which parsed field holds the message
+              // for JSON logs (Go controllers use "msg", some apps use "message");
+              // _msg is the fallback for plain-text lines. Without this, JSON logs
+              // show "missing _msg field" instead of the actual message.
+              url = "http://victorialogs.monitoring.svc:9428/insert/loki/api/v1/push?_msg_field=msg,message,_msg"
             }
             external_labels = {
               cluster = "home",
