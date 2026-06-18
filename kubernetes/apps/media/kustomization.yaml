@@ -6,3 +6,6 @@ resources:
   - prowlarr.yaml
   - sonarr.yaml
   - radarr.yaml
+  - bazarr.yaml
+  - sabnzbd.yaml
+  - flaresolverr.yaml
