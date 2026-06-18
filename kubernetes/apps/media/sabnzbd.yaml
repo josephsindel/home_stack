@@ -47,8 +47,7 @@ spec:
         accessMode: ReadWriteOnce
         size: 2Gi
         globalMounts: [{ path: /config }]
-      # RO until cutover; SAB completes to /mnt/nas/content/usenet once flipped RW.
       media:
         enabled: true
         existingClaim: media
-        globalMounts: [{ path: /mnt/nas/content, subPath: content, readOnly: true }]
+        globalMounts: [{ path: /mnt/nas/content, subPath: content }]

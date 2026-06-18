@@ -30,8 +30,24 @@ spec:
               PGID: "100"
               TZ: America/Los_Angeles
             probes:
-              liveness: { enabled: true }
-              readiness: { enabled: true }
+              # Bazarr indexes the library on startup; relax probes so it isn't
+              # killed before its web server binds 6767.
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  tcpSocket: { port: 6767 }
+                  initialDelaySeconds: 120
+                  periodSeconds: 30
+                  failureThreshold: 6
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  tcpSocket: { port: 6767 }
+                  initialDelaySeconds: 30
+                  periodSeconds: 15
+                  failureThreshold: 12
     service:
       app:
         controller: bazarr
@@ -50,4 +66,4 @@ spec:
       media:
         enabled: true
         existingClaim: media
-        globalMounts: [{ path: /mnt/nas/content, subPath: content, readOnly: true }]
+        globalMounts: [{ path: /mnt/nas/content, subPath: content }]
