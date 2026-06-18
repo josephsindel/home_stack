@@ -80,12 +80,19 @@ To enable:
    `kubeControllerManager.enabled: true`, `kubeScheduler.enabled: true`, and for
    etcd `kubeEtcd.enabled: true` with an http endpoint on `:2381`. Commit.
 
-## Wiring an alert channel — later
+## Alerting — disabled (vmalert evaluates, nothing routes)
 
-Alertmanager boots with a `blackhole` receiver (no spam). To route alerts:
+Alertmanager is **disabled** (`alertmanager.enabled: false`); vmalert still
+evaluates rules (visible in its UI) but has a blackhole notifier
+(`vmalert.spec.extraArgs.notifier.blackhole: "true"`), so nothing is delivered.
+The `Watchdog` alert fires permanently by design (dead-man's-switch) — harmless
+with no receiver.
 
-1. Put the webhook in `monitoring-secrets` (`DISCORD_WEBHOOK_URL` placeholder is
-   already there), re-encrypt.
-2. Uncomment the `discord` receiver in `vm-k8s-stack.yaml` (it reads the webhook
-   from the mounted secret via `webhook_url_file`) and point `route.receiver` at
-   it. ntfy/Pushover work the same way (Pushover natively, ntfy via a relay).
+To wire a real channel:
+
+1. Set `alertmanager.enabled: true` and add `spec.secrets: [monitoring-secrets]`.
+2. Remove the vmalert `notifier.blackhole` arg (vmalert auto-targets alertmanager).
+3. Put the webhook in `monitoring-secrets` (`DISCORD_WEBHOOK_URL` placeholder is
+   there), re-encrypt, and add a `discord`/`ntfy`/`pushover` receiver under
+   `alertmanager.config` reading it via `webhook_url_file`
+   (`/etc/vm/secrets/monitoring-secrets/DISCORD_WEBHOOK_URL`).
