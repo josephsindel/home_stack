@@ -1,0 +1,20 @@
+# Helm chart sources for the monitoring stack.
+#   victoriametrics → victoria-metrics-k8s-stack + victoria-logs-single
+#   grafana         → alloy (log shipper DaemonSet)
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: victoriametrics
+  namespace: flux-system
+spec:
+  interval: 24h
+  url: https://victoriametrics.github.io/helm-charts/
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: grafana
+  namespace: flux-system
+spec:
+  interval: 24h
+  url: https://grafana.github.io/helm-charts

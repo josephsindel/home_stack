@@ -1,0 +1,156 @@
+# VictoriaMetrics k8s stack: VMSingle (TSDB) + vmagent (scraper) + vmalert +
+# vmalertmanager + Grafana + kube-state-metrics + node-exporter, all driven by
+# the victoria-metrics-operator. Drop-in for Prometheus: MetricsQL is a PromQL
+# superset and the operator consumes ServiceMonitor/PrometheusRule-equivalents
+# (VMServiceScrape/VMRule), so the whole Grafana dashboard ecosystem works.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: vm-k8s-stack
+  namespace: monitoring
+spec:
+  interval: 1h
+  timeout: 15m            # operator + CRDs + grafana on first install; default 5m flaps
+  install:
+    remediation: { retries: 3 }
+  upgrade:
+    remediation: { retries: 3 }
+  chart:
+    spec:
+      chart: victoria-metrics-k8s-stack
+      version: "0.84.0"
+      sourceRef:
+        kind: HelmRepository
+        name: victoriametrics
+        namespace: flux-system
+  values:
+    # --- Operator CRDs: install as plain manifests via server-side apply, not
+    # Helm hooks. This is the Flux/ArgoCD-recommended setting and avoids the
+    # classic "CRD too large / ownership conflict" failures on reconcile.
+    victoria-metrics-operator:
+      crds:
+        enabled: true
+        plain: true
+
+    # --- Metrics backend (single node; local-path is correct here) -----------
+    vmsingle:
+      enabled: true
+      spec:
+        retentionPeriod: "30d"
+        storage:
+          volumeClaimTemplate:
+            spec:
+              storageClassName: local-path
+              accessModes: ["ReadWriteOnce"]
+              resources:
+                requests:
+                  storage: 20Gi
+
+    # --- Scraper -------------------------------------------------------------
+    vmagent:
+      enabled: true
+
+    # --- Recording/alerting rule evaluator -----------------------------------
+    vmalert:
+      enabled: true
+
+    # --- Alertmanager: boots clean with a blackhole receiver. Wire a real
+    # channel (Discord/ntfy/Pushover) later — see secret-monitoring.sops.yaml
+    # for the webhook secret + the commented receiver example below.
+    alertmanager:
+      enabled: true
+      spec:
+        # mounts the SOPS secret at /etc/vm/secrets/monitoring-secrets/... so a
+        # receiver can read a webhook via *_url_file (no env-expansion quirks).
+        secrets:
+          - monitoring-secrets
+      config:
+        route:
+          group_by: ["alertname", "namespace"]
+          group_wait: 30s
+          group_interval: 5m
+          repeat_interval: 4h
+          receiver: blackhole
+          routes:
+            - receiver: blackhole
+              matchers:
+                - alertname = "Watchdog"
+        receivers:
+          - name: blackhole
+          # - name: discord
+          #   discord_configs:
+          #     - webhook_url_file: /etc/vm/secrets/monitoring-secrets/DISCORD_WEBHOOK_URL
+          #       send_resolved: true
+
+    # --- Default alert rules. Control-plane scrape is disabled below (Talos),
+    # so a few control-plane alerts may be noisy until you apply the Talos
+    # bind-address patch and flip the kube* targets to enabled. Tune via
+    # defaultRules.groups.<name>.create: false once you see what fires.
+    defaultRules:
+      create: true
+
+    # --- Talos: kube-scheduler/controller-manager bind to localhost and etcd
+    # metrics need client certs. Leave these OFF until the Talos machine-config
+    # patch is applied (see kubernetes/apps/monitoring/README.md), otherwise the
+    # scrapes fail forever and their alerts fire permanently.
+    kubeControllerManager:
+      enabled: false
+    kubeScheduler:
+      enabled: false
+    kubeEtcd:
+      enabled: false
+    # kube-proxy is disabled on this cluster (Cilium kubeProxyReplacement via
+    # KubePrism), so there is nothing to scrape — turn its target off.
+    kubeProxy:
+      enabled: false
+    # kubelet + cadvisor scrape works out of the box on Talos.
+
+    kube-state-metrics:
+      enabled: true
+    prometheus-node-exporter:
+      enabled: true
+
+    # --- Grafana -------------------------------------------------------------
+    grafana:
+      enabled: true
+      # First-party VictoriaLogs datasource plugin (signed; installs at start).
+      plugins:
+        - victoriametrics-logs-datasource
+      admin:
+        existingSecret: monitoring-secrets
+        userKey: admin-user
+        passwordKey: admin-password
+      persistence:
+        enabled: true
+        storageClassName: local-path
+        accessModes: ["ReadWriteOnce"]
+        size: 5Gi
+      service:
+        type: LoadBalancer
+        annotations:
+          lbipam.cilium.io/ips: "192.168.86.245"
+        port: 80
+      grafana.ini:
+        server:
+          root_url: "http://192.168.86.245/"
+      sidecar:
+        dashboards:
+          enabled: true
+          searchNamespace: ALL
+          label: grafana_dashboard
+          labelValue: "1"
+          folderAnnotation: grafana_folder
+          provider:
+            foldersFromFilesStructure: true
+        datasources:
+          enabled: true
+
+    # VictoriaMetrics + Alertmanager datasources are auto-provisioned by the
+    # chart; add VictoriaLogs as an extra one pointing at the VLSingle service.
+    defaultDatasources:
+      extra:
+        - name: VictoriaLogs
+          type: victoriametrics-logs-datasource
+          uid: victorialogs
+          url: http://victorialogs.monitoring.svc:9428
+          access: proxy

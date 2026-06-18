@@ -1,0 +1,9 @@
+# node-exporter (a DaemonSet in this namespace) uses hostNetwork/hostPID and
+# mounts host /proc, /sys, / — so the namespace must allow privileged pods.
+# Same pattern as the media namespace (gluetun).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+  labels:
+    pod-security.kubernetes.io/enforce: privileged

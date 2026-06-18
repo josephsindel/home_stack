@@ -6,3 +6,4 @@ resources:
   - searxng
   - n8n
   - media
+  - monitoring

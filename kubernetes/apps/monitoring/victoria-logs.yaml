@@ -1,0 +1,40 @@
+# VictoriaLogs (single node) — the log backend. PVC-backed, no S3/MinIO needed.
+# Ingests via the Loki push API (Alloy ships to it); queried by Grafana through
+# the victoriametrics-logs-datasource plugin. HTTP listener is :9428.
+#
+# fullnameOverride pins the Service name to `victorialogs` so the Grafana
+# datasource URL and the Alloy endpoint are stable (default would be a long
+# release-derived name).
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: victoria-logs
+  namespace: monitoring
+spec:
+  interval: 1h
+  install:
+    remediation: { retries: 3 }
+  upgrade:
+    remediation: { retries: 3 }
+  chart:
+    spec:
+      chart: victoria-logs-single
+      version: "0.13.8"
+      sourceRef:
+        kind: HelmRepository
+        name: victoriametrics
+        namespace: flux-system
+  values:
+    server:
+      fullnameOverride: victorialogs
+      retentionPeriod: "30d"
+      persistentVolume:
+        enabled: true
+        storageClassName: local-path
+        size: 20Gi
+      resources:
+        requests:
+          cpu: 100m
+          memory: 256Mi
+        limits:
+          memory: 1Gi
