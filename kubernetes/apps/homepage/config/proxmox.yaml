@@ -1,0 +1,3 @@
+---
+# Not used. Present only so homepage does not try to copy its skeleton onto the
+# read-only /app/config mount (which crashes with EROFS). See helmrelease note.
