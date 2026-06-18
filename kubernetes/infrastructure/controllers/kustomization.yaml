@@ -3,5 +3,6 @@ kind: Kustomization
 resources:
   - namespaces.yaml
   - loadbalancing.yaml
+  - local-path-provisioner.yaml
   - cert-manager.yaml
   - csi-driver-nfs.yaml

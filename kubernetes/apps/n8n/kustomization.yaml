@@ -1,7 +1,6 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-# Workloads added per migration wave.
 resources:
-  - headlamp
-  - searxng
-  - n8n
+  - namespace.yaml
+  - secret.sops.yaml
+  - helmrelease.yaml
