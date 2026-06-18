@@ -40,10 +40,11 @@ spec:
                 valueFrom:
                   secretKeyRef: { name: media-arr-keys, key: RADARR_API_KEY }
         pod:
+          # No fsGroup: it triggers a recursive chown of the entire NFS media
+          # library. NFS authorizes by numeric uid/gid, so runAsUser/Group suffice.
           securityContext:
             runAsUser: 1024
             runAsGroup: 100
-            fsGroup: 100
     persistence:
       media:
         enabled: true
