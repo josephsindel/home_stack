@@ -151,27 +151,6 @@
       siteMonitor: http://192.168.86.10:8090/
 
 - network:
-  - Edge IO:
-      href: https://192.168.86.1/network/default/dashboard
-      icon: mdi-speedometer
-      description: UDM Pro WAN/LAN live throughput
-      widget:
-        type: customapi
-        url: http://192.168.86.10:9108/summary
-        refreshInterval: 5000
-        mappings:
-          - field: wan_down_bps
-            label: WAN down
-            format: bitrate
-          - field: wan_up_bps
-            label: WAN up
-            format: bitrate
-          - field: lan_rx_bps
-            label: LAN rx
-            format: bitrate
-          - field: lan_tx_bps
-            label: LAN tx
-            format: bitrate
   - UDM Pro:
       href: https://192.168.86.1/
       icon: mdi-router-network
