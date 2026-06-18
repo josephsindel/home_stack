@@ -5,6 +5,7 @@
 # The host-bundle secrets in the home-infra repo keep their own .sops.yaml untouched.
 creation_rules:
   - path_regex: kubernetes/.*\.sops\.ya?ml$
+    encrypted_regex: ^(data|stringData)$
     age: >-
       age1s6p4fr0zhx3azja49lvfdgxv2093af6xnrq3kjjw22tk5h7rputq7fdsvj,
       age1rj5crn092ny5fatzt05su4z7qthx5n33npuc0jhzed8umwngfdgssds32a
