@@ -55,7 +55,7 @@ spec:
         annotations:
           lbipam.cilium.io/ips: "192.168.86.251"
         ports:
-          http: { port: 80, targetPort: 6767 }
+          http: { port: 6767, targetPort: 6767 }
     persistence:
       config:
         enabled: true
