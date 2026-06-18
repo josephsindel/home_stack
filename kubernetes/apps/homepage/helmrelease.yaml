@@ -37,19 +37,21 @@ spec:
             envFrom:
               - secretRef:
                   name: homepage-secret
+            # TCP probes, not httpGet: kubelet hits the pod IP, whose Host header
+            # (10.244.x:3000) isn't in HOMEPAGE_ALLOWED_HOSTS and would 403.
             probes:
               liveness:
                 enabled: true
                 custom: true
                 spec:
-                  httpGet: { path: /api/healthcheck, port: 3000 }
+                  tcpSocket: { port: 3000 }
                   initialDelaySeconds: 15
                   periodSeconds: 30
               readiness:
                 enabled: true
                 custom: true
                 spec:
-                  httpGet: { path: /api/healthcheck, port: 3000 }
+                  tcpSocket: { port: 3000 }
                   initialDelaySeconds: 5
                   periodSeconds: 10
     service:
