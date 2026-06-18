@@ -10,4 +10,6 @@ resources:
   - sabnzbd.yaml
   - flaresolverr.yaml
   - secret-arr-keys.sops.yaml
+  - secret-gluetun.sops.yaml
   - unpackerr.yaml
+  - qbittorrent.yaml
