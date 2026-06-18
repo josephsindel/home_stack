@@ -8,7 +8,7 @@ metadata:
   namespace: monitoring
 spec:
   path: /snmp
-  scrapeInterval: 60s
+  interval: 60s
   scrapeTimeout: 30s          # SNMP walks are slow; keep headroom under interval
   params:
     auth: [synology_v2]       # matches auths: in the SOPS overlay
