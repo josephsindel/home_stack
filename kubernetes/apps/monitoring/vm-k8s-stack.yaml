@@ -54,33 +54,13 @@ spec:
     vmalert:
       enabled: true
 
-    # --- Alertmanager: boots clean with a blackhole receiver. Wire a real
-    # channel (Discord/ntfy/Pushover) later — see secret-monitoring.sops.yaml
-    # for the webhook secret + the commented receiver example below.
+    # --- Alertmanager: DISABLED for now. Alerting is deferred until a real
+    # channel is wired, and an enabled-but-unrouted alertmanager was just extra
+    # failure surface. To turn it on later: set enabled: true, mount the SOPS
+    # secret (spec.secrets: [monitoring-secrets]), and add a discord/ntfy/pushover
+    # receiver reading the webhook via *_url_file. See README.
     alertmanager:
-      enabled: true
-      spec:
-        # mounts the SOPS secret at /etc/vm/secrets/monitoring-secrets/... so a
-        # receiver can read a webhook via *_url_file (no env-expansion quirks).
-        secrets:
-          - monitoring-secrets
-      config:
-        route:
-          group_by: ["alertname", "namespace"]
-          group_wait: 30s
-          group_interval: 5m
-          repeat_interval: 4h
-          receiver: blackhole
-          routes:
-            - receiver: blackhole
-              matchers:
-                - alertname = "Watchdog"
-        receivers:
-          - name: blackhole
-          # - name: discord
-          #   discord_configs:
-          #     - webhook_url_file: /etc/vm/secrets/monitoring-secrets/DISCORD_WEBHOOK_URL
-          #       send_resolved: true
+      enabled: false
 
     # --- Default alert rules. Control-plane scrape is disabled below (Talos),
     # so a few control-plane alerts may be noisy until you apply the Talos
@@ -144,38 +124,6 @@ spec:
             foldersFromFilesStructure: true
         datasources:
           enabled: true
-
-      # Curated cluster/workload overview dashboards (dotdc set) on top of the
-      # node/component dashboards the chart already ships. Pulled by a
-      # download-dashboards init container from GitHub at pod start and served
-      # via a file provider; coexists with the sidecar above. dotdc dashboards
-      # auto-bind to the default Prometheus datasource (VictoriaMetrics).
-      dashboardProviders:
-        dashboardproviders.yaml:
-          apiVersion: 1
-          providers:
-            - name: grafana-dashboards-kubernetes
-              orgId: 1
-              folder: Kubernetes
-              type: file
-              disableDeletion: true
-              editable: true
-              options:
-                path: /var/lib/grafana/dashboards/grafana-dashboards-kubernetes
-      dashboards:
-        grafana-dashboards-kubernetes:
-          k8s-views-global:
-            url: https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-views-global.json
-          k8s-views-namespaces:
-            url: https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-views-namespaces.json
-          k8s-views-nodes:
-            url: https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-views-nodes.json
-          k8s-views-pods:
-            url: https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-views-pods.json
-          k8s-system-api-server:
-            url: https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-system-api-server.json
-          k8s-system-coredns:
-            url: https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-system-coredns.json
 
     # VictoriaMetrics + Alertmanager datasources are auto-provisioned by the
     # chart; add VictoriaLogs as an extra one pointing at the VLSingle service.
