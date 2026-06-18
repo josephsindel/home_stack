@@ -2,17 +2,16 @@
 # Trusted LAN. Requires Cilium l2announcements.enabled=true (set via cilium/install.sh
 # helm upgrade). LB-IPAM itself is already enabled on the running Cilium.
 #
-# IMPORTANT: the Trusted (.86) DHCP range is .6-.254, so this LB block MUST be
-# carved OUT of UniFi DHCP or the gateway/clients will lease + ARP-stomp these IPs.
-# Action: set the Trusted network DHCP range end to .244 (i.e. .6-.244), leaving
-# .245-.254 exclusively for the cluster LoadBalancer pool.
+# Carved OUT of UniFi DHCP (Trusted DHCP shrunk to .6-.234) so Cilium owns this
+# block exclusively. Each LoadBalancer service pins a specific IP via the
+# lbipam.cilium.io/ips annotation for determinism.
 apiVersion: cilium.io/v2
 kind: CiliumLoadBalancerIPPool
 metadata:
   name: home-lan-pool
 spec:
   blocks:
-    - start: "192.168.86.245"
+    - start: "192.168.86.235"
       stop: "192.168.86.254"
 ---
 apiVersion: cilium.io/v2alpha1
