@@ -1,6 +1,18 @@
 machine:
   install:
     disk: /dev/nvme0n1
+  kubelet:
+    # Writable bind mount so local-path-provisioner can create PV dirs (Talos
+    # otherwise exposes /var subpaths read-only to the kubelet). Applied live to
+    # both nodes 2026-06-18; worker mirrors this via talos/worker-patch.yaml.
+    extraMounts:
+      - destination: /var/local-path-provisioner
+        type: bind
+        source: /var/local-path-provisioner
+        options:
+          - bind
+          - rshared
+          - rw
   network:
     nameservers:
       - 1.1.1.1

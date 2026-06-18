@@ -1,6 +1,8 @@
 # Vendored from rancher/local-path-provisioner v0.0.36 deploy/local-path-storage.yaml
 # with 3 homelab/Talos changes:
-#   1. host path -> /var/mnt/local-path-provisioner (Talos /opt is read-only; /var persists)
+#   1. host path -> /var/local-path-provisioner — REQUIRES a matching
+#      machine.kubelet.extraMounts bind mount in the Talos config (see talos/),
+#      else the kubelet hits "read-only file system" on /var subpaths.
 #   2. StorageClass `local-path` marked default (node-local, for SQLite/DB/app config)
 #   3. namespace labeled privileged PSA (helper pods mount hostPath)
 # NFS (nfs-synology) stays for bulk media RWX; local-path for lock-sensitive state.
@@ -134,7 +136,7 @@ data:
             "nodePathMap":[
             {
                     "node":"DEFAULT_PATH_FOR_NON_LISTED_NODES",
-                    "paths":["/var/mnt/local-path-provisioner"]
+                    "paths":["/var/local-path-provisioner"]
             }
             ]
     }
