@@ -51,8 +51,15 @@ spec:
       enabled: true
 
     # --- Recording/alerting rule evaluator -----------------------------------
+    # Alertmanager is disabled (alerting deferred), so vmalert has no notifier;
+    # the chart requires an explicit blackhole notifier in that case. Rules still
+    # evaluate (visible in vmalert UI) — they just route nowhere until a real
+    # alertmanager/channel is wired.
     vmalert:
       enabled: true
+      spec:
+        extraArgs:
+          notifier.blackhole: "true"
 
     # --- Alertmanager: DISABLED for now. Alerting is deferred until a real
     # channel is wired, and an enabled-but-unrouted alertmanager was just extra
