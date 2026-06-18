@@ -7,6 +7,9 @@ resources:
   - vm-k8s-stack.yaml
   - victoria-logs.yaml
   - alloy.yaml
+  - snmp-exporter.yaml
+  - secret-snmp.sops.yaml
+  - vmscrapeconfig-synology.yaml
 
 # dotdc Kubernetes overview dashboards, delivered as a ConfigMap the Grafana
 # sidecar auto-loads (label grafana_dashboard: "1", folder via grafana_folder).
@@ -27,3 +30,13 @@ configMapGenerator:
         grafana_dashboard: "1"
       annotations:
         grafana_folder: Kubernetes
+  # Synology NAS dashboard (gnetId 14284, bound to VictoriaMetrics) in its own folder.
+  - name: synology-dashboard
+    namespace: monitoring
+    files:
+      - dashboards/synology-nas.json
+    options:
+      labels:
+        grafana_dashboard: "1"
+      annotations:
+        grafana_folder: Synology

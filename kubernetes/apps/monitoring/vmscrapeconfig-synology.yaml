@@ -1,0 +1,38 @@
+# Scrape the Synology NAS (192.168.86.12) through snmp-exporter (multi-target
+# pattern): vmagent hits snmp-exporter:9116/snmp?target=<nas>&module=...&auth=...
+# selectAllByDefault is true on vmagent, so this is auto-discovered.
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMScrapeConfig
+metadata:
+  name: snmp-synology-nas
+  namespace: monitoring
+spec:
+  path: /snmp
+  scrapeInterval: 60s
+  scrapeTimeout: 30s          # SNMP walks are slow; keep headroom under interval
+  params:
+    auth: [synology_v2]       # matches auths: in the SOPS overlay
+    # synology = disk/SMART/RAID/system/temp/IO/UPS; the rest add CPU, load,
+    # memory, filesystem usage, uptime and network IO (modular since v0.30).
+    module:
+      - synology
+      - if_mib
+      - ucd_la_table
+      - ucd_system_stats
+      - ucd_memory
+      - hrStorage
+      - hrSystem
+  staticConfigs:
+    - targets:
+        - 192.168.86.12
+      labels:
+        nas: synology
+        instance: synology
+  relabelConfigs:
+    # device IP → ?target=, then point the actual scrape at snmp-exporter
+    - sourceLabels: [__address__]
+      targetLabel: __param_target
+    - sourceLabels: [__param_target]
+      targetLabel: instance
+    - targetLabel: __address__
+      replacement: snmp-exporter.monitoring.svc:9116
