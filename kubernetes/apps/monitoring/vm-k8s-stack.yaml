@@ -112,6 +112,12 @@ spec:
         storageClassName: local-path
         accessModes: ["ReadWriteOnce"]
         size: 5Gi
+      # Disable the in-container chown init: it runs `chown` inside busybox and
+      # hits "Permission denied" on the local-path PVC. The pod's fsGroup: 472
+      # already makes the kubelet chown the volume at mount time (host-priv, so
+      # it can't fail the same way), making initChownData redundant.
+      initChownData:
+        enabled: false
       service:
         type: LoadBalancer
         annotations:
