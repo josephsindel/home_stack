@@ -1,0 +1,28 @@
+# Cilium LB-IPAM pool + L2 (ARP) announcement for LoadBalancer services on the
+# Trusted LAN. Requires Cilium l2announcements.enabled=true (set via cilium/install.sh
+# helm upgrade). LB-IPAM itself is already enabled on the running Cilium.
+#
+# IMPORTANT: 192.168.86.240-.250 must be reserved OUT of the UniFi DHCP pool
+# (general pool is .31-.254) so these IPs are never leased to a DHCP client.
+apiVersion: cilium.io/v2
+kind: CiliumLoadBalancerIPPool
+metadata:
+  name: home-lan-pool
+spec:
+  blocks:
+    - start: "192.168.86.240"
+      stop: "192.168.86.250"
+---
+apiVersion: cilium.io/v2alpha1
+kind: CiliumL2AnnouncementPolicy
+metadata:
+  name: home-lan-l2
+spec:
+  # Announce LoadBalancer IPs via ARP. No interface selector → Cilium answers on
+  # the node's native devices (avoids guessing the MS-01 NIC name, which is not
+  # stable across boots on this hardware).
+  loadBalancerIPs: true
+  externalIPs: false
+  nodeSelector:
+    matchLabels:
+      kubernetes.io/os: linux

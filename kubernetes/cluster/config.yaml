@@ -1,0 +1,22 @@
+# Cluster config that depends on controllers being Ready (e.g. cert-manager CRDs).
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: config
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 2m
+  timeout: 5m
+  path: ./kubernetes/infrastructure/config
+  prune: true
+  wait: true
+  dependsOn:
+    - name: controllers
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age

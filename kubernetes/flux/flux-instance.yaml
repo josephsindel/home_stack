@@ -1,0 +1,30 @@
+# Bootstrap artifact — applied once by hand (flux-operator reconciles it thereafter).
+# The operator installs the Flux controllers AND creates the GitRepository "flux-system"
+# + root Kustomization that syncs kubernetes/cluster from this (public) repo.
+apiVersion: fluxcd.controlplane.io/v1
+kind: FluxInstance
+metadata:
+  name: flux
+  namespace: flux-system
+  annotations:
+    fluxcd.controlplane.io/reconcileEvery: "1h"
+    fluxcd.controlplane.io/reconcileTimeout: "5m"
+spec:
+  distribution:
+    version: "2.x"            # tracks latest Flux v2 (currently v2.8.8)
+    registry: "ghcr.io/fluxcd"
+  components:
+    - source-controller
+    - kustomize-controller
+    - helm-controller
+    - notification-controller
+  cluster:
+    type: kubernetes
+    multitenant: false
+    networkPolicy: true
+    domain: "cluster.local"
+  sync:
+    kind: GitRepository
+    url: "https://github.com/josephsindel/home_stack.git"
+    ref: "refs/heads/main"
+    path: "kubernetes/cluster"
