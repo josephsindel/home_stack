@@ -21,6 +21,7 @@ configMapGenerator:
       - dashboards/k8s-views-pods.json
       - dashboards/k8s-system-api-server.json
       - dashboards/k8s-system-coredns.json
+      - dashboards/logs-explorer.json
     options:
       labels:
         grafana_dashboard: "1"
