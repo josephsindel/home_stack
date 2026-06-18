@@ -33,18 +33,24 @@ sops -e -i kubernetes/apps/monitoring/secret-monitoring.sops.yaml
 `.sops.yaml` already matches `kubernetes/**/*.sops.yaml`. Commit only the
 encrypted file. Flux's `apps` Kustomization decrypts it at reconcile.
 
-## Dashboards (import after Grafana is up)
+## Dashboards (provisioned automatically — no manual import)
 
-The chart ships the VictoriaMetrics + kubernetes-mixin dashboards. Add the
-actively-maintained community set by importing these IDs in Grafana
-(Dashboards → Import), datasource = VictoriaMetrics:
+Two layers, both as code:
 
-- **1860** Node Exporter Full
-- **21742** kube-state-metrics v2 (object health)
-- **dotdc/grafana-dashboards-kubernetes** (k8s-views-global / -nodes / -pods / -namespaces)
+1. **Shipped by the chart:** node-exporter, kubelet, scheduler/controller-manager,
+   alertmanager, and the VictoriaMetrics component dashboards.
+2. **dotdc cluster/workload overview** (added in `vm-k8s-stack.yaml` under
+   `grafana.dashboards`): `k8s-views-global`, `-namespaces`, `-nodes`, `-pods`,
+   `k8s-system-api-server`, `k8s-system-coredns` — pulled from GitHub at pod start
+   into the **Kubernetes** folder, auto-bound to the `VictoriaMetrics` datasource.
 
-To manage dashboards as code later: drop a ConfigMap labeled
-`grafana_dashboard: "1"` (the sidecar is already enabled, `searchNamespace: ALL`).
+The Grafana pod needs egress to `raw.githubusercontent.com` for layer 2. If that's
+blocked, switch to committing the dashboard JSON as ConfigMaps labeled
+`grafana_dashboard: "1"` (the sidecar is enabled, `searchNamespace: ALL`) — no
+egress required.
+
+To add more: append to `grafana.dashboards.grafana-dashboards-kubernetes` (by
+`url:` or `gnetId:`+`revision:`), or drop a labeled ConfigMap.
 
 ## Enabling control-plane scrape (Talos) — later
 

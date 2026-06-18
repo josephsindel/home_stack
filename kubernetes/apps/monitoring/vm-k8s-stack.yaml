@@ -145,6 +145,38 @@ spec:
         datasources:
           enabled: true
 
+      # Curated cluster/workload overview dashboards (dotdc set) on top of the
+      # node/component dashboards the chart already ships. Pulled by a
+      # download-dashboards init container from GitHub at pod start and served
+      # via a file provider; coexists with the sidecar above. dotdc dashboards
+      # auto-bind to the default Prometheus datasource (VictoriaMetrics).
+      dashboardProviders:
+        dashboardproviders.yaml:
+          apiVersion: 1
+          providers:
+            - name: grafana-dashboards-kubernetes
+              orgId: 1
+              folder: Kubernetes
+              type: file
+              disableDeletion: true
+              editable: true
+              options:
+                path: /var/lib/grafana/dashboards/grafana-dashboards-kubernetes
+      dashboards:
+        grafana-dashboards-kubernetes:
+          k8s-views-global:
+            url: https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-views-global.json
+          k8s-views-namespaces:
+            url: https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-views-namespaces.json
+          k8s-views-nodes:
+            url: https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-views-nodes.json
+          k8s-views-pods:
+            url: https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-views-pods.json
+          k8s-system-api-server:
+            url: https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-system-api-server.json
+          k8s-system-coredns:
+            url: https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-system-coredns.json
+
     # VictoriaMetrics + Alertmanager datasources are auto-provisioned by the
     # chart; add VictoriaLogs as an extra one pointing at the VLSingle service.
     defaultDatasources:
