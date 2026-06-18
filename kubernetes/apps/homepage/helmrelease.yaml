@@ -33,7 +33,8 @@ spec:
             env:
               TZ: America/Los_Angeles
               # v1.x requires an explicit allow-list for the Host header.
-              HOMEPAGE_ALLOWED_HOSTS: "192.168.86.235,homepage.home.arpa"
+              # Includes the tailnet name served by the Tailscale operator proxy.
+              HOMEPAGE_ALLOWED_HOSTS: "192.168.86.235,homepage.home.arpa,homepage.tailc89bc2.ts.net"
             envFrom:
               - secretRef:
                   name: homepage-secret
@@ -60,6 +61,10 @@ spec:
         type: LoadBalancer
         annotations:
           lbipam.cilium.io/ips: "192.168.86.235"
+          # Tailscale operator publishes this Service on the tailnet as
+          # homepage.tailc89bc2.ts.net (mobile app reaches it over Tailscale).
+          tailscale.com/expose: "true"
+          tailscale.com/hostname: "homepage"
         ports:
           http:
             port: 80

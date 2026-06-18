@@ -1,0 +1,35 @@
+# Tailscale Kubernetes Operator. Exposes cluster Services to the tailnet via the
+# `tailscale.com/expose` annotation (see homepage). Auth is the pre-created SOPS
+# secret `operator-oauth` (client_id/client_secret), so we don't pass OAuth creds
+# through Helm values. Requires ACL tags tag:k8s-operator and tag:k8s in the
+# tailnet policy.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: tailscale-operator
+  namespace: tailscale
+spec:
+  interval: 1h
+  install:
+    remediation: { retries: 3 }
+  upgrade:
+    remediation: { retries: 3 }
+  chart:
+    spec:
+      chart: tailscale-operator
+      version: "1.98.4"
+      sourceRef:
+        kind: HelmRepository
+        name: tailscale
+        namespace: flux-system
+  values:
+    # oauth.* left empty on purpose: the operator mounts the pre-created
+    # SOPS secret `operator-oauth` (keys client_id / client_secret).
+    installCRDs: true
+    operatorConfig:
+      hostname: tailscale-operator
+      defaultTags:
+        - "tag:k8s-operator"
+    # Ingress/egress proxies; tagged tag:k8s.
+    proxyConfig:
+      defaultTags: "tag:k8s"
