@@ -1,41 +1,16 @@
 # Homepage runs IN the k8s cluster (homepage namespace, LB 192.168.86.235).
-# Groups reflect WHERE a service runs:
-#   - kubernetes  : cluster platform/apps
-#   - media       : media + games stack (k8s, except Plex which is native on mediaserver)
-#   - mediaserver : services still running on the mediaserver host (Docker/native)
+# Organized BY FUNCTION (not by host) since almost everything is now in k8s.
 # Link conventions:
 #   - href:        opened by the USER'S BROWSER -> Tailscale (*.ts.net / 100.x) / LB IPs are fine.
 #   - widget url + siteMonitor: fetched SERVER-SIDE by the homepage POD (no Tailscale) ->
 #       in-cluster -> k8s DNS (svc.namespace); LAN hosts -> LAN IPs (.10 ms / .11 thor / .12 nas / .13 pi).
 #   - API keys come from the SOPS secret via {{HOMEPAGE_VAR_*}} (repo is public).
 
-- kubernetes:
-  - Headlamp:
-      href: http://192.168.86.245/
-      icon: mdi-ship-wheel
-      description: Cluster UI + Flux plugin
-      siteMonitor: http://192.168.86.245/
-  - Grafana:
-      href: http://192.168.86.254/
-      icon: grafana.png
-      description: VictoriaMetrics / Logs dashboards
-      siteMonitor: http://192.168.86.254/api/health
-  - n8n:
-      href: http://192.168.86.247/
-      icon: n8n.png
-      description: Workflow automation
-      siteMonitor: http://192.168.86.247/healthz
-  - SearXNG:
-      href: http://192.168.86.246/
-      icon: searxng.png
-      description: Private metasearch
-      siteMonitor: http://192.168.86.246/healthz
-
-- media:
+- Media:
   - Plex:
       href: https://app.plex.tv/desktop/
       icon: plex.png
-      description: Media library (mediaserver, native)
+      description: Media library
       widget:
         type: plex
         url: http://192.168.86.10:32400
@@ -43,7 +18,7 @@
   - Sonarr:
       href: http://192.168.86.248:8989/sonarr
       icon: sonarr.png
-      description: TV Shows (k8s)
+      description: TV Shows
       widget:
         type: sonarr
         url: http://sonarr.media:8989/sonarr
@@ -52,7 +27,7 @@
   - Radarr:
       href: http://192.168.86.249:7878/radarr
       icon: radarr.png
-      description: Movies (k8s)
+      description: Movies
       widget:
         type: radarr
         url: http://radarr.media:7878/radarr
@@ -61,7 +36,7 @@
   - Prowlarr:
       href: http://192.168.86.250:9696/prowlarr
       icon: prowlarr.png
-      description: Indexers (k8s)
+      description: Indexers
       widget:
         type: prowlarr
         url: http://prowlarr.media:9696/prowlarr
@@ -69,7 +44,7 @@
   - Bazarr:
       href: http://192.168.86.251:6767/bazarr
       icon: bazarr.png
-      description: Subtitles (k8s)
+      description: Subtitles
       widget:
         type: bazarr
         url: http://bazarr.media:6767/bazarr
@@ -77,7 +52,7 @@
   - SABnzbd:
       href: http://192.168.86.252:8080/sabnzbd
       icon: sabnzbd.png
-      description: Usenet downloader (k8s)
+      description: Usenet downloader
       widget:
         type: sabnzbd
         url: http://sabnzbd.media:8080/sabnzbd
@@ -85,7 +60,7 @@
   - qBittorrent:
       href: http://192.168.86.253:8080/
       icon: qbittorrent.png
-      description: Torrent client via Proton VPN (k8s)
+      description: Torrent client via Proton VPN
       widget:
         type: qbittorrent
         # Pod CIDR 10.244.0.0/16 is on qBittorrent's AuthSubnetWhitelist, so the
@@ -96,43 +71,75 @@
   - Unpackerr:
       href: http://192.168.86.248:8989/sonarr/activity/queue
       icon: unpackerr.png
-      description: Auto-extract RAR/ZIP (k8s, no own UI - see Sonarr queue)
+      description: Auto-extract RAR/ZIP (no own UI - see Sonarr queue)
   - RomM:
       href: https://romm.tailc89bc2.ts.net/
       icon: mdi-gamepad-variant
-      description: ROM library manager (k8s)
+      description: ROM / game library
       siteMonitor: http://192.168.86.236:8080/
 
-- mediaserver:
-  - Home Assistant:
-      href: http://mediaserver.tailc89bc2.ts.net:8123
-      icon: home-assistant.png
-      description: Smart-home hub (host network)
-  - Healthchecks:
-      href: https://mediaserver.tailc89bc2.ts.net/healthchecks/
-      icon: healthchecks.png
-      description: Cron / timer monitoring (alerts on missed pings)
+- AI & LLM:
+  - Open WebUI:
+      href: https://thor.tailc89bc2.ts.net/
+      icon: open-webui.png
+      description: LLM chat UI
+  - Ollama:
+      href: http://100.117.60.85:11434/
+      icon: ollama.png
+      description: Local LLM models
+  - LiteLLM:
+      href: http://100.117.60.85:4001/ui
+      icon: mdi-router-network
+      description: LLM gateway (Open WebUI backend)
+      siteMonitor: http://192.168.86.11:4001/health/liveliness
+  - Langfuse:
+      href: http://100.117.60.85:3000
+      icon: mdi-chart-timeline-variant
+      description: LLM call traces - org thor-homelab
+      siteMonitor: http://192.168.86.11:3000/api/public/ready
+  - ComfyUI:
+      href: https://thor.tailc89bc2.ts.net:8443/
+      icon: comfyui.png
+      description: Image generation
+  - OpenedAI Speech:
+      href: http://100.117.60.85:8000/docs
+      icon: mdi-text-to-speech
+      description: TTS Swagger API
+  - AI Dashboard:
+      href: http://100.117.60.85:19999/custom/thor-ai.html
+      icon: mdi-chart-line-variant
+      description: Thor live LLM tok/s, GPU temp, KV cache
+  - Episode server:
+      href: http://100.117.60.85:8500/healthz
+      icon: mdi-movie-open-play
+      description: unwrittenpasts episode queue - /healthz JSON (queued/running/done/error)
+      siteMonitor: http://192.168.86.11:8500/healthz
+  - Workspace Files:
+      href: https://thor.tailc89bc2.ts.net/files/
+      icon: mdi-folder-cog
+      description: Thor workspace files served by File Browser
+
+- Apps & Knowledge:
+  - n8n:
+      href: http://192.168.86.247/
+      icon: n8n.png
+      description: Workflow automation
+      siteMonitor: http://192.168.86.247/healthz
+  - SearXNG:
+      href: http://192.168.86.246/
+      icon: searxng.png
+      description: Private metasearch
+      siteMonitor: http://192.168.86.246/healthz
   - Project NOMAD:
       href: http://mediaserver.tailc89bc2.ts.net:8095/
       icon: mdi-book-open-variant
       description: Offline knowledge server - Wikipedia, courses, notes, maps (use :8095 http)
       siteMonitor: http://192.168.86.10:8095/api/health
-  - Traefik:
-      href: http://192.168.86.10:8088/dashboard/
-      icon: traefik.png
-      description: Reverse proxy (mediaserver)
-      widget:
-        type: traefik
-        url: http://192.168.86.10:8088
-  - WUD:
-      href: https://mediaserver.tailc89bc2.ts.net:8444/
-      icon: whats-up-docker.png
-      description: Container update visibility (mediaserver)
-      widget:
-        type: whatsupdocker
-        url: http://192.168.86.10:3000
-
-- nomad:
+  - Kiwix:
+      href: http://mediaserver.tailc89bc2.ts.net:8090/
+      icon: mdi-bookshelf
+      description: Offline ZIM library served by Project NOMAD
+      siteMonitor: http://192.168.86.10:8090/
   - CyberChef:
       href: http://mediaserver.tailc89bc2.ts.net:8100/
       icon: mdi-tools
@@ -143,13 +150,79 @@
       icon: mdi-note-text
       description: Offline notes module managed by Project NOMAD
       siteMonitor: http://192.168.86.10:8200/
-  - Kiwix:
-      href: http://mediaserver.tailc89bc2.ts.net:8090/
-      icon: mdi-bookshelf
-      description: Offline ZIM library served by Project NOMAD
-      siteMonitor: http://192.168.86.10:8090/
 
-- network:
+- Smart Home:
+  - Home Assistant:
+      href: http://mediaserver.tailc89bc2.ts.net:8123
+      icon: home-assistant.png
+      description: Smart-home hub (mediaserver, host network)
+  - DAKboard:
+      href: http://100.102.47.66/
+      icon: mdi-monitor-dashboard
+      description: Living room display (livingroom-pi)
+
+- Platform & Monitoring:
+  - Headlamp:
+      href: http://192.168.86.245/
+      icon: mdi-ship-wheel
+      description: Cluster UI + Flux plugin
+      siteMonitor: http://192.168.86.245/
+  - Grafana:
+      href: http://192.168.86.254/
+      icon: grafana.png
+      description: VictoriaMetrics / Logs dashboards
+      siteMonitor: http://192.168.86.254/api/health
+  - Netdata:
+      href: http://100.117.60.85:19999/
+      icon: netdata.png
+      description: Thor system metrics
+  - Healthchecks:
+      href: https://mediaserver.tailc89bc2.ts.net/healthchecks/
+      icon: healthchecks.png
+      description: Cron / timer monitoring (alerts on missed pings)
+  - Traefik (mediaserver):
+      href: http://192.168.86.10:8088/dashboard/
+      icon: traefik.png
+      description: Reverse proxy (mediaserver)
+      widget:
+        type: traefik
+        url: http://192.168.86.10:8088
+  - Traefik (thor):
+      href: http://192.168.86.11:8088/dashboard/
+      icon: traefik.png
+      description: Reverse proxy (thor)
+      widget:
+        type: traefik
+        url: http://192.168.86.11:8088
+  - WUD (mediaserver):
+      href: https://mediaserver.tailc89bc2.ts.net:8444/
+      icon: whats-up-docker.png
+      description: Container update visibility (mediaserver)
+      widget:
+        type: whatsupdocker
+        url: http://192.168.86.10:3000
+  - WUD (nas):
+      href: https://mediaserver.tailc89bc2.ts.net:8502/
+      icon: whats-up-docker.png
+      description: Container update visibility (nas)
+      widget:
+        type: whatsupdocker
+        url: http://192.168.86.12:3001
+  - WUD (thor):
+      href: http://100.117.60.85:3001/
+      icon: whats-up-docker.png
+      description: Container update visibility (thor)
+      widget:
+        type: whatsupdocker
+        url: http://192.168.86.11:3001
+  - WUD (pi):
+      href: http://100.102.47.66:3001/
+      icon: whats-up-docker.png
+      # No widget/siteMonitor: the Pi's WUD binds only to its Tailscale IP
+      # (100.102.47.66:3001), unreachable from the LAN-only homepage pod.
+      description: Container update visibility (livingroom-pi)
+
+- Network:
   - UDM Pro:
       href: https://192.168.86.1/
       icon: mdi-router-network
@@ -170,8 +243,12 @@
       href: https://192.168.86.1/network/default/devices
       icon: mdi-access-point-network
       description: Adopted Wi-Fi 7 AP - 192.168.86.165
+  - Pi-hole:
+      href: http://100.102.47.66:8081/admin/
+      icon: pi-hole.png
+      description: Network ad blocker (DNS sinkhole) - livingroom-pi
 
-- nas:
+- Storage:
   - DSM:
       href: https://mediaserver.tailc89bc2.ts.net:8501/
       icon: synology.png
@@ -184,90 +261,8 @@
       href: https://mediaserver.tailc89bc2.ts.net:8501/?launchApp=SYNO.SDS.AdminCenter.Application
       icon: mdi-harddisk
       description: All filesystems on NAS
-  - WUD (nas):
-      href: https://mediaserver.tailc89bc2.ts.net:8502/
-      icon: whats-up-docker.png
-      description: Container update visibility
-      widget:
-        type: whatsupdocker
-        url: http://192.168.86.12:3001
 
-- thor:
-  - AI Dashboard:
-      href: http://100.117.60.85:19999/custom/thor-ai.html
-      icon: mdi-chart-line-variant
-      description: Thor live LLM tok/s, GPU temp, KV cache
-  - ComfyUI:
-      href: https://thor.tailc89bc2.ts.net:8443/
-      icon: comfyui.png
-      description: Image generation
-  - Episode server:
-      href: http://100.117.60.85:8500/healthz
-      icon: mdi-movie-open-play
-      description: unwrittenpasts episode queue - /healthz JSON (queued/running/done/error)
-      siteMonitor: http://192.168.86.11:8500/healthz
-  - Langfuse:
-      href: http://100.117.60.85:3000
-      icon: mdi-chart-timeline-variant
-      description: LLM call traces - org thor-homelab
-      siteMonitor: http://192.168.86.11:3000/api/public/ready
-  - LiteLLM:
-      href: http://100.117.60.85:4001/ui
-      icon: mdi-router-network
-      description: LLM gateway (Open WebUI backend)
-      siteMonitor: http://192.168.86.11:4001/health/liveliness
-  - Netdata:
-      href: http://100.117.60.85:19999/
-      icon: netdata.png
-      description: System metrics
-  - Ollama:
-      href: http://100.117.60.85:11434/
-      icon: ollama.png
-      description: Local LLM models
-  - Open WebUI:
-      href: https://thor.tailc89bc2.ts.net/
-      icon: open-webui.png
-      description: LLM chat UI
-  - OpenedAI Speech:
-      href: http://100.117.60.85:8000/docs
-      icon: mdi-text-to-speech
-      description: TTS Swagger API
-  - Traefik (thor):
-      href: http://192.168.86.11:8088/dashboard/
-      icon: traefik.png
-      description: Reverse proxy
-      widget:
-        type: traefik
-        url: http://192.168.86.11:8088
-  - Workspace Files:
-      href: https://thor.tailc89bc2.ts.net/files/
-      icon: mdi-folder-cog
-      description: Thor workspace files served by File Browser
-  - WUD (thor):
-      href: http://100.117.60.85:3001/
-      icon: whats-up-docker.png
-      description: Container update visibility
-      widget:
-        type: whatsupdocker
-        url: http://192.168.86.11:3001
-
-- pi:
-  - DAKboard:
-      href: http://100.102.47.66/
-      icon: mdi-monitor-dashboard
-      description: Living room display settings
-  - Pi-hole:
-      href: http://100.102.47.66:8081/admin/
-      icon: pi-hole.png
-      description: Network ad blocker (DNS sinkhole)
-  - WUD (pi):
-      href: http://100.102.47.66:3001/
-      icon: whats-up-docker.png
-      # No widget/siteMonitor: the Pi's WUD binds only to its Tailscale IP
-      # (100.102.47.66:3001), unreachable from the LAN-only homepage pod.
-      description: Container update visibility
-
-- ssh:
+- SSH:
   - livingroom-pi:
       href: ssh://joe@livingroom-pi.tailc89bc2.ts.net
       icon: mdi-console

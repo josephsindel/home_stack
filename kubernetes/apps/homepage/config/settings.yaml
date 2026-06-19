@@ -4,48 +4,44 @@ theme: dark
 color: slate
 headerStyle: clean
 statusStyle: dot
+# Groups are organized by FUNCTION (not by host). Keys must match services.yaml.
 layout:
-  kubernetes:
-    style: row
-    columns: 4
-    header: true
-    icon: mdi-kubernetes
-  media:
+  Media:
     style: row
     columns: 5
     header: true
     icon: mdi-multimedia
-  mediaserver:
+  AI & LLM:
     style: row
     columns: 5
     header: true
-    icon: mdi-server
-  nomad:
+    icon: mdi-robot
+  Apps & Knowledge:
     style: row
     columns: 3
     header: true
-    icon: mdi-book-open-variant
-  network:
+    icon: mdi-apps
+  Smart Home:
+    style: row
+    columns: 2
+    header: true
+    icon: mdi-home-automation
+  Platform & Monitoring:
+    style: row
+    columns: 5
+    header: true
+    icon: mdi-server-network
+  Network:
     style: row
     columns: 3
     header: true
     icon: mdi-lan
-  nas:
-    style: row
-    columns: 4
-    header: true
-    icon: mdi-nas
-  thor:
-    style: row
-    columns: 5
-    header: true
-    icon: mdi-brain
-  pi:
+  Storage:
     style: row
     columns: 3
     header: true
-    icon: mdi-raspberry-pi
-  ssh:
+    icon: mdi-nas
+  SSH:
     style: row
     columns: 4
     header: true
