@@ -1,1 +1,15 @@
-[]
+# Compact quick-links (render as small chips, not full tiles).
+# WUD = What's Up Docker per-host container-update watchers.
+- Container Updates (WUD):
+    - mediaserver:
+        - abbr: MS
+          href: https://mediaserver.tailc89bc2.ts.net:8444/
+    - nas:
+        - abbr: NAS
+          href: https://mediaserver.tailc89bc2.ts.net:8502/
+    - thor:
+        - abbr: TH
+          href: http://100.117.60.85:3001/
+    - pi:
+        - abbr: PI
+          href: http://100.102.47.66:3001/

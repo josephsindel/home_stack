@@ -194,33 +194,8 @@
       widget:
         type: traefik
         url: http://192.168.86.11:8088
-  - WUD (mediaserver):
-      href: https://mediaserver.tailc89bc2.ts.net:8444/
-      icon: whats-up-docker.png
-      description: Container update visibility (mediaserver)
-      widget:
-        type: whatsupdocker
-        url: http://192.168.86.10:3000
-  - WUD (nas):
-      href: https://mediaserver.tailc89bc2.ts.net:8502/
-      icon: whats-up-docker.png
-      description: Container update visibility (nas)
-      widget:
-        type: whatsupdocker
-        url: http://192.168.86.12:3001
-  - WUD (thor):
-      href: http://100.117.60.85:3001/
-      icon: whats-up-docker.png
-      description: Container update visibility (thor)
-      widget:
-        type: whatsupdocker
-        url: http://192.168.86.11:3001
-  - WUD (pi):
-      href: http://100.102.47.66:3001/
-      icon: whats-up-docker.png
-      # No widget/siteMonitor: the Pi's WUD binds only to its Tailscale IP
-      # (100.102.47.66:3001), unreachable from the LAN-only homepage pod.
-      description: Container update visibility (livingroom-pi)
+  # WUD (What's Up Docker) per-host update watchers are compact bookmark chips
+  # (see bookmarks.yaml) instead of 4 redundant widget tiles.
 
 - Network:
   - UDM Pro:

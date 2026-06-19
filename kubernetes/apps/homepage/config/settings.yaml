@@ -28,7 +28,7 @@ layout:
     icon: mdi-home-automation
   Platform & Monitoring:
     style: row
-    columns: 5
+    columns: 3
     header: true
     icon: mdi-server-network
   Network:
