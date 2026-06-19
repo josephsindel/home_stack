@@ -1,0 +1,27 @@
+# Stakater Reloader: watches ConfigMaps/Secrets and rolls Deployments annotated
+# with reloader.stakater.com/auto: "true" when their mounted config changes.
+# Fixes the homepage "edit doesn't apply until manual restart" gotcha.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: reloader
+  namespace: reloader
+spec:
+  interval: 1h
+  install:
+    remediation: { retries: 3 }
+  upgrade:
+    remediation: { retries: 3 }
+  chart:
+    spec:
+      chart: reloader
+      version: "2.2.12"
+      sourceRef:
+        kind: HelmRepository
+        name: stakater
+        namespace: flux-system
+  values:
+    reloader:
+      # Only act on resources that explicitly opt in via annotation.
+      reloadStrategy: annotations
+      watchGlobally: true

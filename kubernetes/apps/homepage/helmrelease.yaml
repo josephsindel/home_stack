@@ -25,6 +25,11 @@ spec:
   values:
     controllers:
       homepage:
+        # Stakater Reloader rolls this Deployment when homepage-config changes
+        # (homepage only reads config at boot + the CM has a stable name, so a
+        # config edit otherwise needs a manual restart).
+        annotations:
+          reloader.stakater.com/auto: "true"
         containers:
           app:
             image:

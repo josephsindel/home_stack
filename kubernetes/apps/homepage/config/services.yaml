@@ -194,8 +194,30 @@
       widget:
         type: traefik
         url: http://192.168.86.11:8088
-  # WUD (What's Up Docker) per-host update watchers are compact bookmark chips
-  # (see bookmarks.yaml) instead of 4 redundant widget tiles.
+  # One tile aggregates "updates available" counts across the LAN WUD instances
+  # (ms/nas/thor) via the wud-aggregator service; per-host WUD UIs (incl. pi) are
+  # the compact bookmark chips in bookmarks.yaml.
+  - Container Updates:
+      href: https://mediaserver.tailc89bc2.ts.net:8444/
+      icon: mdi-package-up
+      description: Container image updates available (WUD)
+      widget:
+        type: customapi
+        url: http://wud-aggregator.wud-aggregator:8080/
+        refreshInterval: 60000
+        mappings:
+          - field: total
+            label: Total
+            format: number
+          - field: mediaserver
+            label: mediaserver
+            format: number
+          - field: nas
+            label: nas
+            format: number
+          - field: thor
+            label: thor
+            format: number
 
 - Network:
   - UDM Pro:

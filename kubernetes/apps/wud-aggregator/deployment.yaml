@@ -1,0 +1,63 @@
+# Tiny stdlib-only Python service: polls the LAN WUD instances and serves a
+# single JSON update-count summary for the Homepage "Container Updates" tile.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wud-aggregator
+  namespace: wud-aggregator
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wud-aggregator
+  template:
+    metadata:
+      labels:
+        app: wud-aggregator
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: app
+          image: python:3.13-alpine
+          command: ["python", "/app/wud_aggregator.py"]
+          ports:
+            - containerPort: 8080
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          readinessProbe:
+            httpGet: { path: /healthz, port: 8080 }
+            initialDelaySeconds: 5
+            periodSeconds: 15
+          livenessProbe:
+            httpGet: { path: /healthz, port: 8080 }
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          volumeMounts:
+            - name: script
+              mountPath: /app
+      volumes:
+        - name: script
+          configMap:
+            name: wud-aggregator-script
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wud-aggregator
+  namespace: wud-aggregator
+spec:
+  selector:
+    app: wud-aggregator
+  ports:
+    - port: 8080
+      targetPort: 8080

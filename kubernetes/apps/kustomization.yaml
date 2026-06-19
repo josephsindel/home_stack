@@ -8,5 +8,7 @@ resources:
   - media
   - monitoring
   - homepage
+  - wud-aggregator
+  - reloader
   - romm
   - tailscale-operator
