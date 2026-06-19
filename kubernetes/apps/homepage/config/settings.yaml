@@ -10,6 +10,11 @@ layout:
     columns: 4
     header: true
     icon: mdi-kubernetes
+  media:
+    style: row
+    columns: 5
+    header: true
+    icon: mdi-multimedia
   mediaserver:
     style: row
     columns: 5

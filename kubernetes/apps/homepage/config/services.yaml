@@ -1,12 +1,13 @@
-# Homepage now runs IN the k8s cluster (homepage namespace, LB 192.168.86.235).
-# Link conventions after the Docker->k8s migration:
-#   - href:        opened by the USER'S BROWSER -> keep Tailscale (*.ts.net / 100.x)
-#                  and LB IP URLs; the browser is on the tailnet/LAN.
-#   - widget/url + siteMonitor: fetched SERVER-SIDE by the homepage POD, which has
-#                  NO Tailscale. So these point at:
-#                    * in-cluster services  -> k8s DNS  (svc.namespace, e.g. sonarr.media)
-#                    * LAN hosts            -> LAN IPs  (mediaserver .10, thor .11, nas .12, pi .13)
-#   - API keys are injected from the SOPS secret via {{HOMEPAGE_VAR_*}} (repo is public).
+# Homepage runs IN the k8s cluster (homepage namespace, LB 192.168.86.235).
+# Groups reflect WHERE a service runs:
+#   - kubernetes  : cluster platform/apps
+#   - media       : media + games stack (k8s, except Plex which is native on mediaserver)
+#   - mediaserver : services still running on the mediaserver host (Docker/native)
+# Link conventions:
+#   - href:        opened by the USER'S BROWSER -> Tailscale (*.ts.net / 100.x) / LB IPs are fine.
+#   - widget url + siteMonitor: fetched SERVER-SIDE by the homepage POD (no Tailscale) ->
+#       in-cluster -> k8s DNS (svc.namespace); LAN hosts -> LAN IPs (.10 ms / .11 thor / .12 nas / .13 pi).
+#   - API keys come from the SOPS secret via {{HOMEPAGE_VAR_*}} (repo is public).
 
 - kubernetes:
   - Headlamp:
@@ -22,28 +23,23 @@
   - n8n:
       href: http://192.168.86.247/
       icon: n8n.png
-      description: Workflow automation (migrated to k8s)
+      description: Workflow automation
       siteMonitor: http://192.168.86.247/healthz
   - SearXNG:
       href: http://192.168.86.246/
       icon: searxng.png
-      description: Private metasearch (migrated to k8s)
+      description: Private metasearch
       siteMonitor: http://192.168.86.246/healthz
 
-- mediaserver:
+- media:
   - Plex:
       href: https://app.plex.tv/desktop/
       icon: plex.png
-      description: Media library
+      description: Media library (mediaserver, native)
       widget:
         type: plex
         url: http://192.168.86.10:32400
         key: "{{HOMEPAGE_VAR_PLEX_KEY}}"
-  - Jellyfin:
-      href: http://mediaserver.tailc89bc2.ts.net:8096/
-      icon: jellyfin.png
-      description: Media library, no Plex remote pass
-      siteMonitor: http://192.168.86.10:8096/
   - Sonarr:
       href: http://192.168.86.248:8989/sonarr
       icon: sonarr.png
@@ -100,11 +96,18 @@
   - Unpackerr:
       href: http://192.168.86.248:8989/sonarr/activity/queue
       icon: unpackerr.png
-      description: Auto-extract RAR/ZIP (no own UI - see Sonarr queue)
+      description: Auto-extract RAR/ZIP (k8s, no own UI - see Sonarr queue)
+  - RomM:
+      href: https://romm.tailc89bc2.ts.net/
+      icon: mdi-gamepad-variant
+      description: ROM library manager (k8s)
+      siteMonitor: http://192.168.86.236:8080/
+
+- mediaserver:
   - Home Assistant:
       href: http://mediaserver.tailc89bc2.ts.net:8123
       icon: home-assistant.png
-      description: Smart-home hub
+      description: Smart-home hub (host network)
   - Healthchecks:
       href: https://mediaserver.tailc89bc2.ts.net/healthchecks/
       icon: healthchecks.png
@@ -114,11 +117,6 @@
       icon: mdi-book-open-variant
       description: Offline knowledge server - Wikipedia, courses, notes, maps (use :8095 http)
       siteMonitor: http://192.168.86.10:8095/api/health
-  - RomM:
-      href: https://romm.tailc89bc2.ts.net/
-      icon: mdi-gamepad-variant
-      description: ROM library manager (k8s)
-      siteMonitor: http://192.168.86.236:8080/
   - Traefik:
       href: http://192.168.86.10:8088/dashboard/
       icon: traefik.png
@@ -265,11 +263,9 @@
   - WUD (pi):
       href: http://100.102.47.66:3001/
       icon: whats-up-docker.png
+      # No widget/siteMonitor: the Pi's WUD binds only to its Tailscale IP
+      # (100.102.47.66:3001), unreachable from the LAN-only homepage pod.
       description: Container update visibility
-      siteMonitor: http://192.168.86.13:3001/
-      widget:
-        type: whatsupdocker
-        url: http://192.168.86.13:3001
 
 - ssh:
   - livingroom-pi:
