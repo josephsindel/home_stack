@@ -5,6 +5,7 @@ metadata:
   namespace: headlamp
 spec:
   interval: 1h
+  maxHistory: 3
   chart:
     spec:
       chart: headlamp
@@ -18,6 +19,15 @@ spec:
     # so an emptyDir is enough — no PVC (avoids NFS root-squash chown + no default SC).
     config:
       pluginsDir: /build/plugins
+      # Keep browser sessions valid for a week. The chart renders larger
+      # integers in scientific notation, which Headlamp's int parser rejects.
+      # The login token itself comes from the in-cluster service account below,
+      # so you should not need a freshly generated token every time you open Headlamp.
+      sessionTTL: 604800
+      # Homelab-only tradeoff: the LoadBalancer is on the trusted LAN and this
+      # avoids the repeated token-login flow. Do not expose Headlamp publicly
+      # with this enabled.
+      unsafeUseServiceAccountToken: true
     initContainers:
       - name: headlamp-plugins
         image: ghcr.io/headlamp-k8s/headlamp-plugin-flux:latest

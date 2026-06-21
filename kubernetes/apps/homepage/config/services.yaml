@@ -105,10 +105,6 @@
       href: http://100.117.60.85:8000/docs
       icon: mdi-text-to-speech
       description: TTS Swagger API
-  - AI Dashboard:
-      href: http://100.117.60.85:19999/custom/thor-ai.html
-      icon: mdi-chart-line-variant
-      description: Thor live LLM tok/s, GPU temp, KV cache
   - Episode server:
       href: http://100.117.60.85:8500/healthz
       icon: mdi-movie-open-play
@@ -163,7 +159,7 @@
 
 - Platform & Monitoring:
   - Headlamp:
-      href: http://192.168.86.245/
+      href: http://192.168.86.245/c/main/namespaces
       icon: mdi-ship-wheel
       description: Cluster UI + Flux plugin
       siteMonitor: http://192.168.86.245/
@@ -172,10 +168,10 @@
       icon: grafana.png
       description: VictoriaMetrics / Logs dashboards
       siteMonitor: http://192.168.86.254/api/health
-  - Netdata:
-      href: http://100.117.60.85:19999/
-      icon: netdata.png
-      description: Thor system metrics
+  - Thor AI:
+      href: http://192.168.86.254/d/thor-ai/thor-ai
+      icon: mdi-chart-line-variant
+      description: Thor metrics
   - Healthchecks:
       href: https://mediaserver.tailc89bc2.ts.net/healthchecks/
       icon: healthchecks.png
