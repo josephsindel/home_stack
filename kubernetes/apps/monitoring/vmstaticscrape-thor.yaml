@@ -1,0 +1,37 @@
+# Scrape Prometheus-native Thor exporters from the Kubernetes VictoriaMetrics
+# stack. Thor remains outside the Talos cluster; these endpoints are exposed on
+# Thor's Trusted LAN address.
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMStaticScrape
+metadata:
+  name: thor
+  namespace: monitoring
+spec:
+  jobName: thor
+  targetEndpoints:
+    - targets: ["192.168.86.11:9100"]
+      interval: 30s
+      labels:
+        instance: thor
+        host: thor
+        exporter: node
+    - targets: ["192.168.86.11:9102"]
+      interval: 15s
+      labels:
+        instance: thor
+        host: thor
+        exporter: jetson
+    - targets: ["192.168.86.11:11436"]
+      path: /metrics
+      interval: 15s
+      labels:
+        instance: thor
+        host: thor
+        exporter: ollama-proxy
+    - targets: ["192.168.86.11:4001"]
+      path: /metrics/
+      interval: 30s
+      labels:
+        instance: thor
+        host: thor
+        exporter: litellm

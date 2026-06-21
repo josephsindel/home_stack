@@ -35,22 +35,19 @@ encrypted file. Flux's `apps` Kustomization decrypts it at reconcile.
 
 ## Dashboards (provisioned automatically — no manual import)
 
-Two layers, both as code:
+Dashboard JSON is vendored under `dashboards/` and delivered as labeled
+ConfigMaps, so Grafana can provision it without internet egress:
 
 1. **Shipped by the chart:** node-exporter, kubelet, scheduler/controller-manager,
    alertmanager, and the VictoriaMetrics component dashboards.
-2. **dotdc cluster/workload overview** (added in `vm-k8s-stack.yaml` under
-   `grafana.dashboards`): `k8s-views-global`, `-namespaces`, `-nodes`, `-pods`,
-   `k8s-system-api-server`, `k8s-system-coredns` — pulled from GitHub at pod start
-   into the **Kubernetes** folder, auto-bound to the `VictoriaMetrics` datasource.
+2. **Kubernetes folder:** dotdc cluster/workload dashboards plus logs explorer.
+3. **Synology folder:** SNMP NAS dashboard.
+4. **Thor folder:** `thor-ai.json` for Thor host, Jetson, Ollama, and LiteLLM.
+5. **Media folder:** `media-stack.json` for the Kubernetes `media` namespace.
+6. **Overview folder:** `home-stack-overview.json` for the whole stack.
 
-The Grafana pod needs egress to `raw.githubusercontent.com` for layer 2. If that's
-blocked, switch to committing the dashboard JSON as ConfigMaps labeled
-`grafana_dashboard: "1"` (the sidecar is enabled, `searchNamespace: ALL`) — no
-egress required.
-
-To add more: append to `grafana.dashboards.grafana-dashboards-kubernetes` (by
-`url:` or `gnetId:`+`revision:`), or drop a labeled ConfigMap.
+To add more: drop JSON into `dashboards/` and add a `configMapGenerator` entry
+with label `grafana_dashboard: "1"` and a `grafana_folder` annotation.
 
 ## Enabling control-plane scrape (Talos) — later
 

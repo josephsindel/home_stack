@@ -10,6 +10,7 @@ resources:
   - snmp-exporter.yaml
   - secret-snmp.sops.yaml
   - vmscrapeconfig-synology.yaml
+  - vmstaticscrape-thor.yaml
 
 # dotdc Kubernetes overview dashboards, delivered as a ConfigMap the Grafana
 # sidecar auto-loads (label grafana_dashboard: "1", folder via grafana_folder).
@@ -40,3 +41,30 @@ configMapGenerator:
         grafana_dashboard: "1"
       annotations:
         grafana_folder: Synology
+  - name: thor-ai-dashboard
+    namespace: monitoring
+    files:
+      - dashboards/thor-ai.json
+    options:
+      labels:
+        grafana_dashboard: "1"
+      annotations:
+        grafana_folder: Thor
+  - name: media-stack-dashboard
+    namespace: monitoring
+    files:
+      - dashboards/media-stack.json
+    options:
+      labels:
+        grafana_dashboard: "1"
+      annotations:
+        grafana_folder: Media
+  - name: home-stack-overview-dashboard
+    namespace: monitoring
+    files:
+      - dashboards/home-stack-overview.json
+    options:
+      labels:
+        grafana_dashboard: "1"
+      annotations:
+        grafana_folder: Overview
