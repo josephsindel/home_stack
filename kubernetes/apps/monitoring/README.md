@@ -43,11 +43,31 @@ ConfigMaps, so Grafana can provision it without internet egress:
 2. **Kubernetes folder:** dotdc cluster/workload dashboards plus logs explorer.
 3. **Synology folder:** SNMP NAS dashboard.
 4. **Thor folder:** `thor-ai.json` for Thor host, Jetson, Ollama, and LiteLLM.
+   Headroom is not included yet because its proxy metrics are loopback-only on
+   Thor (`127.0.0.1:8787`); add a metrics-only bridge before scraping it from
+   Kubernetes.
 5. **Media folder:** `media-stack.json` for the Kubernetes `media` namespace.
 6. **Overview folder:** `home-stack-overview.json` for the whole stack.
 
 To add more: drop JSON into `dashboards/` and add a `configMapGenerator` entry
 with label `grafana_dashboard: "1"` and a `grafana_folder` annotation.
+
+## Deferred Thor AI Monitoring
+
+The current Thor scrape target set is intentionally limited to endpoints already
+exposed on Thor's Trusted LAN address:
+
+- `192.168.86.11:9100` - node-exporter.
+- `192.168.86.11:9102` - Jetson tegrastats exporter.
+- `192.168.86.11:11436/metrics` - Ollama metrics proxy.
+- `192.168.86.11:4001/metrics/` - LiteLLM metrics.
+
+Headroom currently exposes useful Prometheus metrics at
+`127.0.0.1:8787/metrics`, but the Kubernetes monitoring stack cannot scrape
+Thor loopback. Later, add Headroom properly by creating a metrics-only bridge
+or textfile collector on Thor, adding that target to `vmstaticscrape-thor.yaml`,
+and extending `dashboards/thor-ai.json` with request, failure, active request,
+token-savings, compression, overhead, latency, and TTFB panels.
 
 ## Enabling control-plane scrape (Talos) — later
 

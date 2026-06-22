@@ -1,6 +1,11 @@
 # Scrape Prometheus-native Thor exporters from the Kubernetes VictoriaMetrics
 # stack. Thor remains outside the Talos cluster; these endpoints are exposed on
 # Thor's Trusted LAN address.
+#
+# Deferred: Headroom exposes /metrics on Thor loopback 127.0.0.1:8787, but it is
+# intentionally not scraped here until a metrics-only LAN bridge or textfile
+# collector exists. Do not point vmagent at 192.168.86.11:8787 unless the proxy
+# exposure model has been explicitly changed.
 apiVersion: operator.victoriametrics.com/v1beta1
 kind: VMStaticScrape
 metadata:
