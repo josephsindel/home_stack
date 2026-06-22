@@ -26,13 +26,13 @@ spec:
         instance: thor
         host: thor
         exporter: jetson
-    - targets: ["192.168.86.11:11436"]
+    - targets: ["192.168.86.11:11437"]
       path: /metrics
       interval: 15s
       labels:
         instance: thor
         host: thor
-        exporter: ollama-proxy
+        exporter: vllm
     - targets: ["192.168.86.11:4001"]
       path: /metrics/
       interval: 30s

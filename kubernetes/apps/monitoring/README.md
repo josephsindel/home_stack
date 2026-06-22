@@ -42,7 +42,7 @@ ConfigMaps, so Grafana can provision it without internet egress:
    alertmanager, and the VictoriaMetrics component dashboards.
 2. **Kubernetes folder:** dotdc cluster/workload dashboards plus logs explorer.
 3. **Synology folder:** SNMP NAS dashboard.
-4. **Thor folder:** `thor-ai.json` for Thor host, Jetson, Ollama, and LiteLLM.
+4. **Thor folder:** `thor-ai.json` for Thor host, Jetson, vLLM, and LiteLLM.
    Headroom is not included yet because its proxy metrics are loopback-only on
    Thor (`127.0.0.1:8787`); add a metrics-only bridge before scraping it from
    Kubernetes.
@@ -59,7 +59,7 @@ exposed on Thor's Trusted LAN address:
 
 - `192.168.86.11:9100` - node-exporter.
 - `192.168.86.11:9102` - Jetson tegrastats exporter.
-- `192.168.86.11:11436/metrics` - Ollama metrics proxy.
+- `192.168.86.11:11437/metrics` - vLLM Nemotron server.
 - `192.168.86.11:4001/metrics/` - LiteLLM metrics.
 
 Headroom currently exposes useful Prometheus metrics at
