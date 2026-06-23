@@ -1,0 +1,122 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: tdarr
+  namespace: media
+spec:
+  interval: 1h
+  install:
+    remediation: { retries: 3 }
+  upgrade:
+    remediation: { retries: 3 }
+  chart:
+    spec:
+      chart: app-template
+      version: "5.0.1"
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  values:
+    controllers:
+      tdarr:
+        containers:
+          app:
+            image:
+              repository: ghcr.io/haveagitgat/tdarr
+              tag: latest
+            env:
+              TZ: America/Los_Angeles
+              # LSIO/s6 image: runs as root (see pod.securityContext) and s6 drops
+              # the Tdarr processes to PUID:PGID. Ships jellyfin-ffmpeg (full Intel
+              # VA-API/QSV), so hevc_vaapi works out of the box.
+              PUID: "1024"
+              PGID: "100"
+              UMASK: "002"
+              # Combined Server + internal Node in one container.
+              serverIP: 0.0.0.0
+              serverPort: "8266"
+              webUIPort: "8265"
+              internalNode: "true"
+              inContainer: "true"
+              nodeName: TdarrInternalNode
+            probes:
+              # Tdarr's first boot (DB init) is slow; give it a startup grace so
+              # the liveness probe doesn't kill it mid-start.
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  tcpSocket: { port: 8265 }
+                  initialDelaySeconds: 45
+                  periodSeconds: 15
+                  timeoutSeconds: 5
+                  failureThreshold: 5
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  tcpSocket: { port: 8265 }
+                  initialDelaySeconds: 20
+                  periodSeconds: 15
+                  timeoutSeconds: 5
+                  failureThreshold: 5
+            resources:
+              # The Intel GPU device plugin injects /dev/dri (card + renderD128)
+              # when this resource is requested — do NOT also hostPath-mount it.
+              # shared-dev-num=4 on the plugin lets this share the iGPU with Plex-
+              # style loads. request must equal limit.
+              requests:
+                gpu.intel.com/i915: "1"
+              limits:
+                gpu.intel.com/i915: "1"
+        pod:
+          securityContext:
+            # MUST run as root (uid 0): this LSIO/s6 image defaults to USER 1000,
+            # which disables PUID/PGID and breaks s6. As root, s6 applies PUID/PGID
+            # and drops the Tdarr processes to 1024:100, so writes still land
+            # correctly. NO fsGroup — that would recursively chown the 18 TB NFS;
+            # LSIO chowns only its own dirs (/app/*, /temp) as root.
+            runAsUser: 0
+            runAsGroup: 0
+    service:
+      app:
+        controller: tdarr
+        type: LoadBalancer
+        annotations:
+          lbipam.cilium.io/ips: "192.168.86.237"
+        ports:
+          http: { port: 8265, targetPort: 8265 }
+    persistence:
+      server:
+        enabled: true
+        storageClass: local-path
+        accessMode: ReadWriteOnce
+        size: 5Gi
+        globalMounts: [{ path: /app/server }]
+      configs:
+        enabled: true
+        storageClass: local-path
+        accessMode: ReadWriteOnce
+        size: 1Gi
+        globalMounts: [{ path: /app/configs }]
+      logs:
+        enabled: true
+        storageClass: local-path
+        accessMode: ReadWriteOnce
+        size: 1Gi
+        globalMounts: [{ path: /app/logs }]
+      # Transcode scratch on fast local disk (NOT the NFS). Bounded by 1 worker;
+      # nominal size only (local-path doesn't enforce quota).
+      cache:
+        enabled: true
+        storageClass: local-path
+        accessMode: ReadWriteOnce
+        size: 50Gi
+        globalMounts: [{ path: /temp }]
+      # Shared media NFS — mount the whole content tree (Tdarr library will point
+      # at /mnt/nas/content/tv only; movies are deliberately left out for now).
+      media:
+        enabled: true
+        existingClaim: media
+        globalMounts: [{ path: /mnt/nas/content, subPath: content }]

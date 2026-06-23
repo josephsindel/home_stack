@@ -13,3 +13,4 @@ resources:
   - secret-gluetun.sops.yaml
   - unpackerr.yaml
   - qbittorrent.yaml
+  - tdarr.yaml
