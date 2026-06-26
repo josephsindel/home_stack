@@ -83,10 +83,11 @@
       href: https://thor.tailc89bc2.ts.net/
       icon: open-webui.png
       description: LLM chat UI
-  - Ollama:
-      href: http://100.117.60.85:11434/
-      icon: ollama.png
-      description: Local LLM models
+  - vLLM:
+      href: http://100.117.60.85:11437/v1/models
+      icon: mdi-memory
+      description: Resident local model server - nemotron-nano-30b
+      siteMonitor: http://192.168.86.11:11437/v1/models
   - LiteLLM:
       href: http://100.117.60.85:4001/ui
       icon: mdi-router-network
