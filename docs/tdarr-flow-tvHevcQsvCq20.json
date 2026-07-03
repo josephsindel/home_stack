@@ -1,0 +1,279 @@
+{
+    "_id": "tvHevcQsvCq20",
+    "name": "TV HEVC QSV CQ20",
+    "description": "H.264 (and legacy) TV -> HEVC via Intel QSV, quality 20, copy audio/subs. Skips already-HEVC and <6Mbps files. Replaces original only if output is 10-90% of source size. Drops fre/fra audio tracks, but only when a non-French audio track exists.",
+    "tags": "",
+    "flowPlugins": [
+        {
+            "name": "Input File",
+            "sourceRepo": "Community",
+            "pluginName": "inputFile",
+            "version": "1.0.0",
+            "id": "inputNode",
+            "position": {
+                "x": 500,
+                "y": 60
+            }
+        },
+        {
+            "name": "Already HEVC?",
+            "sourceRepo": "Community",
+            "pluginName": "checkVideoCodec",
+            "version": "1.0.0",
+            "id": "checkHevc",
+            "position": {
+                "x": 500,
+                "y": 180
+            },
+            "inputsDB": {
+                "codec": "hevc"
+            }
+        },
+        {
+            "name": "Bitrate >= 6 Mbps?",
+            "sourceRepo": "Community",
+            "pluginName": "checkOverallBitrate",
+            "version": "1.0.0",
+            "id": "checkBitrate",
+            "position": {
+                "x": 500,
+                "y": 300
+            },
+            "inputsDB": {
+                "unit": "kbps",
+                "greaterThan": "6000",
+                "lessThan": "1000000"
+            }
+        },
+        {
+            "name": "FFmpeg Start",
+            "sourceRepo": "Community",
+            "pluginName": "ffmpegCommandStart",
+            "version": "1.0.0",
+            "id": "ffStart",
+            "position": {
+                "x": 500,
+                "y": 420
+            }
+        },
+        {
+            "name": "HEVC QSV Q20",
+            "sourceRepo": "Community",
+            "pluginName": "ffmpegCommandSetVideoEncoder",
+            "version": "1.0.0",
+            "id": "setEncoder",
+            "position": {
+                "x": 500,
+                "y": 540
+            },
+            "inputsDB": {
+                "outputCodec": "hevc",
+                "ffmpegPresetEnabled": "true",
+                "ffmpegPreset": "slow",
+                "ffmpegQualityEnabled": "true",
+                "ffmpegQuality": "20",
+                "hardwareEncoding": "true",
+                "hardwareType": "qsv",
+                "hardwareDecoding": "true",
+                "forceEncoding": "false"
+            }
+        },
+        {
+            "name": "Container mkv",
+            "sourceRepo": "Community",
+            "pluginName": "ffmpegCommandSetContainer",
+            "version": "1.0.0",
+            "id": "setContainer",
+            "position": {
+                "x": 500,
+                "y": 660
+            },
+            "inputsDB": {
+                "container": "mkv",
+                "forceConform": "true"
+            }
+        },
+        {
+            "name": "Execute",
+            "sourceRepo": "Community",
+            "pluginName": "ffmpegCommandExecute",
+            "version": "1.0.0",
+            "id": "ffExec",
+            "position": {
+                "x": 500,
+                "y": 780
+            }
+        },
+        {
+            "name": "New size 10-90%?",
+            "sourceRepo": "Community",
+            "pluginName": "compareFileSizeRatio",
+            "version": "1.0.0",
+            "id": "sizeCheck",
+            "position": {
+                "x": 500,
+                "y": 900
+            },
+            "inputsDB": {
+                "greaterThan": "10",
+                "lessThan": "90"
+            }
+        },
+        {
+            "name": "Replace Original",
+            "sourceRepo": "Community",
+            "pluginName": "replaceOriginalFile",
+            "version": "1.0.0",
+            "id": "replaceOrig",
+            "position": {
+                "x": 500,
+                "y": 1020
+            }
+        },
+        {
+            "name": "Keep original (encode too big)",
+            "sourceRepo": "Community",
+            "pluginName": "failFlow",
+            "version": "1.0.0",
+            "id": "failNode",
+            "position": {
+                "x": 500,
+                "y": 1020
+            }
+        },
+        {
+            "name": "Has non-French audio?",
+            "sourceRepo": "Community",
+            "pluginName": "checkStreamProperty",
+            "version": "1.0.0",
+            "id": "chkNonFr",
+            "position": {
+                "x": 700,
+                "y": 480
+            },
+            "inputsDB": {
+                "streamType": "audio",
+                "propertyToCheck": "tags.language",
+                "valuesToMatch": "fre,fra",
+                "condition": "not_includes"
+            }
+        },
+        {
+            "name": "Drop French audio",
+            "sourceRepo": "Community",
+            "pluginName": "ffmpegCommandRemoveStreamByProperty",
+            "version": "1.0.0",
+            "id": "removeFr",
+            "position": {
+                "x": 700,
+                "y": 560
+            },
+            "inputsDB": {
+                "codecType": "audio",
+                "propertyToCheck": "tags.language",
+                "valuesToRemove": "fre,fra",
+                "condition": "includes"
+            }
+        }
+    ],
+    "flowEdges": [
+        {
+            "source": "inputNode",
+            "sourceHandle": "1",
+            "target": "checkHevc",
+            "targetHandle": null,
+            "id": "e1"
+        },
+        {
+            "source": "checkHevc",
+            "sourceHandle": "2",
+            "target": "checkBitrate",
+            "targetHandle": null,
+            "id": "e2"
+        },
+        {
+            "source": "checkHevc",
+            "sourceHandle": "1",
+            "target": "replaceOrig",
+            "targetHandle": null,
+            "id": "e3"
+        },
+        {
+            "source": "checkBitrate",
+            "sourceHandle": "1",
+            "target": "ffStart",
+            "targetHandle": null,
+            "id": "e4"
+        },
+        {
+            "source": "checkBitrate",
+            "sourceHandle": "2",
+            "target": "replaceOrig",
+            "targetHandle": null,
+            "id": "e5"
+        },
+        {
+            "source": "setEncoder",
+            "sourceHandle": "1",
+            "target": "setContainer",
+            "targetHandle": null,
+            "id": "e7"
+        },
+        {
+            "source": "setContainer",
+            "sourceHandle": "1",
+            "target": "ffExec",
+            "targetHandle": null,
+            "id": "e8"
+        },
+        {
+            "source": "ffExec",
+            "sourceHandle": "1",
+            "target": "sizeCheck",
+            "targetHandle": null,
+            "id": "e9"
+        },
+        {
+            "source": "sizeCheck",
+            "sourceHandle": "1",
+            "target": "replaceOrig",
+            "targetHandle": null,
+            "id": "e10"
+        },
+        {
+            "source": "sizeCheck",
+            "sourceHandle": "2",
+            "target": "failNode",
+            "targetHandle": null,
+            "id": "e11"
+        },
+        {
+            "source": "ffStart",
+            "sourceHandle": "1",
+            "target": "chkNonFr",
+            "targetHandle": null,
+            "id": "e6a"
+        },
+        {
+            "source": "chkNonFr",
+            "sourceHandle": "1",
+            "target": "removeFr",
+            "targetHandle": null,
+            "id": "e6b"
+        },
+        {
+            "source": "chkNonFr",
+            "sourceHandle": "2",
+            "target": "setEncoder",
+            "targetHandle": null,
+            "id": "e6c"
+        },
+        {
+            "source": "removeFr",
+            "sourceHandle": "1",
+            "target": "setEncoder",
+            "targetHandle": null,
+            "id": "e6d"
+        }
+    ]
+}
