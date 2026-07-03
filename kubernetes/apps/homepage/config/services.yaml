@@ -72,6 +72,13 @@
       href: http://192.168.86.248:8989/sonarr/activity/queue
       icon: unpackerr.png
       description: Auto-extract RAR/ZIP (no own UI - see Sonarr queue)
+  - Tdarr:
+      href: http://192.168.86.237:8265/
+      icon: tdarr.png
+      description: H.264 -> HEVC re-encode (worker iGPU, QSV CQ20)
+      widget:
+        type: tdarr
+        url: http://tdarr.media:8265
   - RomM:
       href: https://romm.tailc89bc2.ts.net/
       icon: mdi-gamepad-variant
