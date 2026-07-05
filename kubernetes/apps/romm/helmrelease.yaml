@@ -127,12 +127,3 @@ spec:
                 subPath: content/romm/library
               - path: /romm/assets
                 subPath: content/romm/assets
-              - path: /romm/library/roms/3ds
-                subPath: content/torrents/retroid-incoming/N3DS
-                readOnly: true
-              - path: /romm/library/roms/ngc
-                subPath: content/torrents/retroid-incoming/Legend of Zelda Gamecube Collection USA-TriiForce/extracted/Legend of Zelda Collection
-                readOnly: true
-              - path: /romm/library/roms/psp
-                subPath: content/torrents/retroid-incoming/PSP-extracted/PSP Iso Games
-                readOnly: true
