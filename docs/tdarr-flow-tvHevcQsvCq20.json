@@ -1,7 +1,7 @@
 {
     "_id": "tvHevcQsvCq20",
     "name": "TV HEVC QSV CQ20",
-    "description": "H.264 (and legacy) TV -> HEVC via Intel QSV, quality 20, copy audio/subs. Skips already-HEVC and <6Mbps files. Replaces original only if output is 10-90% of source size. Drops fre/fra audio tracks, but only when a non-French audio track exists.",
+    "description": "H.264 (and legacy) TV -> HEVC via Intel QSV, quality 20, while ensuring a default English/undefined AAC stereo compatibility track. Skips HEVC and <6Mbps video encoding, but still remuxes missing/default AAC stereo with a 95-125% size guard. Drops fre/fra audio tracks, but only when a non-French audio track exists.",
     "tags": "",
     "flowPlugins": [
         {
@@ -23,7 +23,7 @@
             "id": "checkHevc",
             "position": {
                 "x": 500,
-                "y": 180
+                "y": 540
             },
             "inputsDB": {
                 "codec": "hevc"
@@ -37,7 +37,7 @@
             "id": "checkBitrate",
             "position": {
                 "x": 500,
-                "y": 300
+                "y": 660
             },
             "inputsDB": {
                 "unit": "kbps",
@@ -53,7 +53,7 @@
             "id": "ffStart",
             "position": {
                 "x": 500,
-                "y": 420
+                "y": 180
             }
         },
         {
@@ -64,7 +64,7 @@
             "id": "setEncoder",
             "position": {
                 "x": 500,
-                "y": 540
+                "y": 900
             },
             "inputsDB": {
                 "outputCodec": "hevc",
@@ -86,7 +86,7 @@
             "id": "setContainer",
             "position": {
                 "x": 500,
-                "y": 660
+                "y": 1020
             },
             "inputsDB": {
                 "container": "mkv",
@@ -101,7 +101,7 @@
             "id": "ffExec",
             "position": {
                 "x": 500,
-                "y": 780
+                "y": 1140
             }
         },
         {
@@ -112,7 +112,7 @@
             "id": "sizeCheck",
             "position": {
                 "x": 500,
-                "y": 900
+                "y": 1260
             },
             "inputsDB": {
                 "greaterThan": "10",
@@ -127,7 +127,7 @@
             "id": "replaceOrig",
             "position": {
                 "x": 500,
-                "y": 1020
+                "y": 1380
             }
         },
         {
@@ -137,8 +137,8 @@
             "version": "1.0.0",
             "id": "failNode",
             "position": {
-                "x": 500,
-                "y": 1020
+                "x": 740,
+                "y": 1380
             }
         },
         {
@@ -149,7 +149,7 @@
             "id": "chkNonFr",
             "position": {
                 "x": 700,
-                "y": 480
+                "y": 780
             },
             "inputsDB": {
                 "streamType": "audio",
@@ -166,7 +166,7 @@
             "id": "removeFr",
             "position": {
                 "x": 700,
-                "y": 560
+                "y": 900
             },
             "inputsDB": {
                 "codecType": "audio",
@@ -174,106 +174,234 @@
                 "valuesToRemove": "fre,fra",
                 "condition": "includes"
             }
+        },
+        {
+            "name": "Ensure AAC stereo",
+            "sourceRepo": "Community",
+            "pluginName": "ffmpegCommandEnsureAudioStream",
+            "version": "1.0.0",
+            "id": "ensureAac",
+            "position": {
+                "x": 500,
+                "y": 300
+            },
+            "inputsDB": {
+                "audioEncoder": "aac",
+                "language": "en",
+                "channels": "2",
+                "enableBitrate": "true",
+                "bitrate": "192k",
+                "enableSamplerate": "true",
+                "samplerate": "48k"
+            }
+        },
+        {
+            "name": "Compat container mkv",
+            "sourceRepo": "Community",
+            "pluginName": "ffmpegCommandSetContainer",
+            "version": "1.0.0",
+            "id": "setContainerCompat",
+            "position": {
+                "x": 240,
+                "y": 660
+            },
+            "inputsDB": {
+                "container": "mkv",
+                "forceConform": "true"
+            }
+        },
+        {
+            "name": "Execute compat remux",
+            "sourceRepo": "Community",
+            "pluginName": "ffmpegCommandExecute",
+            "version": "1.0.0",
+            "id": "ffExecCompat",
+            "position": {
+                "x": 240,
+                "y": 780
+            }
+        },
+        {
+            "name": "Compat size 95-125%?",
+            "sourceRepo": "Community",
+            "pluginName": "compareFileSizeRatio",
+            "version": "1.0.0",
+            "id": "compatSizeCheck",
+            "position": {
+                "x": 240,
+                "y": 900
+            },
+            "inputsDB": {
+                "greaterThan": "95",
+                "lessThan": "125"
+            }
+        },
+        {
+            "name": "Keep original (compat remux suspicious)",
+            "sourceRepo": "Community",
+            "pluginName": "failFlow",
+            "version": "1.0.0",
+            "id": "compatFail",
+            "position": {
+                "x": 240,
+                "y": 1020
+            }
+        },
+        {
+            "name": "Prefer AAC stereo default",
+            "sourceRepo": "Community",
+            "pluginName": "customFunction",
+            "version": "1.0.0",
+            "id": "preferAacDefault",
+            "position": {
+                "x": 500,
+                "y": 420
+            },
+            "inputsDB": {
+                "code": "module.exports = async (args) => {\n  const streams = args.variables.ffmpegCommand.streams || [];\n  const isAudio = (stream) => stream.codec_type === 'audio';\n  const isVideo = (stream) => stream.codec_type === 'video';\n  const outputArgs = (stream) => Array.isArray(stream.outputArgs) ? stream.outputArgs : [];\n  const willEncodeAacStereo = (stream) => {\n    const argsOut = outputArgs(stream);\n    const hasAacEncoder = argsOut.includes('aac');\n    const acIndex = argsOut.indexOf('-ac');\n    return hasAacEncoder && acIndex !== -1 && String(argsOut[acIndex + 1]) === '2';\n  };\n  const isExistingAacStereo = (stream) => stream.codec_name === 'aac' && Number(stream.channels) === 2;\n  const preferred = streams.find((stream) => isAudio(stream) && (willEncodeAacStereo(stream) || isExistingAacStereo(stream)));\n\n  if (!preferred) {\n    args.jobLog('No AAC stereo stream available to make default.');\n    return { outputFileObj: args.inputFileObj, outputNumber: 1, variables: args.variables };\n  }\n\n  const withoutPreferred = streams.filter((stream) => stream !== preferred);\n  const sorted = [\n    ...withoutPreferred.filter(isVideo),\n    preferred,\n    ...withoutPreferred.filter((stream) => isAudio(stream)),\n    ...withoutPreferred.filter((stream) => !isVideo(stream) && !isAudio(stream)),\n  ];\n\n  const stripDispositionArgs = (stream) => {\n    const argsOut = outputArgs(stream);\n    const cleaned = [];\n    for (let i = 0; i < argsOut.length; i += 1) {\n      if (String(argsOut[i]).startsWith('-disposition')) {\n        i += 1;\n      } else {\n        cleaned.push(argsOut[i]);\n      }\n    }\n    stream.outputArgs = cleaned;\n  };\n\n  for (const stream of sorted) {\n    stripDispositionArgs(stream);\n  }\n\n  let audioIndex = 0;\n  for (const stream of sorted) {\n    if (isAudio(stream)) {\n      stream.outputArgs.push('-disposition:a:{outputTypeIndex}', audioIndex === 0 ? 'default' : '0');\n      audioIndex += 1;\n    }\n  }\n\n  args.variables.ffmpegCommand.streams = sorted;\n  args.variables.ffmpegCommand.shouldProcess = true;\n  args.jobLog('AAC stereo is ordered first and marked as the default audio stream.');\n\n  return { outputFileObj: args.inputFileObj, outputNumber: 1, variables: args.variables };\n};"
+            }
         }
     ],
     "flowEdges": [
         {
             "source": "inputNode",
             "sourceHandle": "1",
-            "target": "checkHevc",
+            "target": "ffStart",
             "targetHandle": null,
             "id": "e1"
+        },
+        {
+            "source": "ffStart",
+            "sourceHandle": "1",
+            "target": "ensureAac",
+            "targetHandle": null,
+            "id": "e2"
+        },
+        {
+            "source": "ensureAac",
+            "sourceHandle": "1",
+            "target": "preferAacDefault",
+            "targetHandle": null,
+            "id": "e3"
+        },
+        {
+            "source": "preferAacDefault",
+            "sourceHandle": "1",
+            "target": "checkHevc",
+            "targetHandle": null,
+            "id": "e4"
+        },
+        {
+            "source": "checkHevc",
+            "sourceHandle": "1",
+            "target": "setContainerCompat",
+            "targetHandle": null,
+            "id": "e5"
         },
         {
             "source": "checkHevc",
             "sourceHandle": "2",
             "target": "checkBitrate",
             "targetHandle": null,
-            "id": "e2"
-        },
-        {
-            "source": "checkHevc",
-            "sourceHandle": "1",
-            "target": "replaceOrig",
-            "targetHandle": null,
-            "id": "e3"
+            "id": "e6"
         },
         {
             "source": "checkBitrate",
             "sourceHandle": "1",
-            "target": "ffStart",
-            "targetHandle": null,
-            "id": "e4"
-        },
-        {
-            "source": "checkBitrate",
-            "sourceHandle": "2",
-            "target": "replaceOrig",
-            "targetHandle": null,
-            "id": "e5"
-        },
-        {
-            "source": "setEncoder",
-            "sourceHandle": "1",
-            "target": "setContainer",
+            "target": "chkNonFr",
             "targetHandle": null,
             "id": "e7"
         },
         {
-            "source": "setContainer",
-            "sourceHandle": "1",
-            "target": "ffExec",
+            "source": "checkBitrate",
+            "sourceHandle": "2",
+            "target": "setContainerCompat",
             "targetHandle": null,
             "id": "e8"
-        },
-        {
-            "source": "ffExec",
-            "sourceHandle": "1",
-            "target": "sizeCheck",
-            "targetHandle": null,
-            "id": "e9"
-        },
-        {
-            "source": "sizeCheck",
-            "sourceHandle": "1",
-            "target": "replaceOrig",
-            "targetHandle": null,
-            "id": "e10"
-        },
-        {
-            "source": "sizeCheck",
-            "sourceHandle": "2",
-            "target": "failNode",
-            "targetHandle": null,
-            "id": "e11"
-        },
-        {
-            "source": "ffStart",
-            "sourceHandle": "1",
-            "target": "chkNonFr",
-            "targetHandle": null,
-            "id": "e6a"
         },
         {
             "source": "chkNonFr",
             "sourceHandle": "1",
             "target": "removeFr",
             "targetHandle": null,
-            "id": "e6b"
+            "id": "e9"
         },
         {
             "source": "chkNonFr",
             "sourceHandle": "2",
             "target": "setEncoder",
             "targetHandle": null,
-            "id": "e6c"
+            "id": "e10"
         },
         {
             "source": "removeFr",
             "sourceHandle": "1",
             "target": "setEncoder",
             "targetHandle": null,
-            "id": "e6d"
+            "id": "e11"
+        },
+        {
+            "source": "setEncoder",
+            "sourceHandle": "1",
+            "target": "setContainer",
+            "targetHandle": null,
+            "id": "e12"
+        },
+        {
+            "source": "setContainer",
+            "sourceHandle": "1",
+            "target": "ffExec",
+            "targetHandle": null,
+            "id": "e13"
+        },
+        {
+            "source": "ffExec",
+            "sourceHandle": "1",
+            "target": "sizeCheck",
+            "targetHandle": null,
+            "id": "e14"
+        },
+        {
+            "source": "sizeCheck",
+            "sourceHandle": "1",
+            "target": "replaceOrig",
+            "targetHandle": null,
+            "id": "e15"
+        },
+        {
+            "source": "sizeCheck",
+            "sourceHandle": "2",
+            "target": "failNode",
+            "targetHandle": null,
+            "id": "e16"
+        },
+        {
+            "source": "setContainerCompat",
+            "sourceHandle": "1",
+            "target": "ffExecCompat",
+            "targetHandle": null,
+            "id": "e17"
+        },
+        {
+            "source": "ffExecCompat",
+            "sourceHandle": "1",
+            "target": "compatSizeCheck",
+            "targetHandle": null,
+            "id": "e18"
+        },
+        {
+            "source": "compatSizeCheck",
+            "sourceHandle": "1",
+            "target": "replaceOrig",
+            "targetHandle": null,
+            "id": "e19"
+        },
+        {
+            "source": "compatSizeCheck",
+            "sourceHandle": "2",
+            "target": "compatFail",
+            "targetHandle": null,
+            "id": "e20"
         }
     ]
 }
