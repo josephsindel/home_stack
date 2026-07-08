@@ -57,27 +57,6 @@ spec:
               HASHEOUS_API_ENABLED: "true"
               PLAYMATCH_API_ENABLED: "true"
               LAUNCHBOX_API_ENABLED: "true"
-              IGDB_CLIENT_ID:
-                valueFrom:
-                  secretKeyRef: { name: romm-secret, key: IGDB_CLIENT_ID, optional: true }
-              IGDB_CLIENT_SECRET:
-                valueFrom:
-                  secretKeyRef: { name: romm-secret, key: IGDB_CLIENT_SECRET, optional: true }
-              MOBYGAMES_API_KEY:
-                valueFrom:
-                  secretKeyRef: { name: romm-secret, key: MOBYGAMES_API_KEY, optional: true }
-              SCREENSCRAPER_USER:
-                valueFrom:
-                  secretKeyRef: { name: romm-secret, key: SCREENSCRAPER_USER, optional: true }
-              SCREENSCRAPER_PASSWORD:
-                valueFrom:
-                  secretKeyRef: { name: romm-secret, key: SCREENSCRAPER_PASSWORD, optional: true }
-              STEAMGRIDDB_API_KEY:
-                valueFrom:
-                  secretKeyRef: { name: romm-secret, key: STEAMGRIDDB_API_KEY, optional: true }
-              RETROACHIEVEMENTS_API_KEY:
-                valueFrom:
-                  secretKeyRef: { name: romm-secret, key: RETROACHIEVEMENTS_API_KEY, optional: true }
               DB_PASSWD:
                 valueFrom:
                   secretKeyRef: { name: romm-secret, key: DB_PASSWD }
