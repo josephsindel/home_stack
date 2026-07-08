@@ -6,5 +6,57 @@ exclude:
         - ".*"
         - "*.nfo"
         - "*.txt"
+        - "*[[]T-*[]]*"
+        - "*[[]Hack*[]]*"
+        - "*[[]Homebrew*[]]*"
+        - "*[[]Proto*[]]*"
+        - "*[[]Beta*[]]*"
+        - "*[[]Aftermarket*[]]*"
+        - "*[[]Unl*[]]*"
+        - "*(Proto)*"
+        - "*(Beta)*"
+        - "*(Homebrew)*"
+        - "*(Aftermarket)*"
+        - "*(Unl)*"
 filesystem:
   roms_folder: roms
+scan:
+  priority:
+    metadata:
+      - igdb
+      - moby
+      - ss
+      - ra
+      - launchbox
+      - hasheous
+      - libretro
+      - gamelist
+      - tgdb
+      - flashpoint
+      - hltb
+    artwork:
+      - sgdb
+      - igdb
+      - moby
+      - ss
+      - libretro
+      - ra
+      - launchbox
+      - hasheous
+      - gamelist
+      - tgdb
+      - flashpoint
+      - hltb
+    region:
+      - us
+      - wor
+      - ss
+      - eu
+      - jp
+    language:
+      - en
+      - fr
+  media:
+    - box2d
+    - screenshot
+    - manual
