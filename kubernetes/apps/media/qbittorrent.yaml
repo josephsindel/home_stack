@@ -36,7 +36,10 @@ spec:
               SERVER_COUNTRIES: Netherlands
               VPN_PORT_FORWARDING: "on"
               VPN_PORT_FORWARDING_PROVIDER: protonvpn
-              DOT: "on"
+              # DNS-over-TLS has been causing repeated Gluetun healthcheck
+              # restarts under tracker load; use cluster DNS through the VPN
+              # namespace instead so qBittorrent does not keep losing PF.
+              DOT: "off"
               FIREWALL_INPUT_PORTS: "8080"
               FIREWALL_OUTBOUND_SUBNETS: "192.168.86.0/24,192.168.20.0/24,192.168.30.0/24,192.168.40.0/24,192.168.50.0/24,10.244.0.0/16,10.96.0.0/12"
               TZ: America/Los_Angeles
@@ -82,14 +85,16 @@ spec:
             args:
               - |
                 while true; do
-                  P=$(cat /tmp/gluetun/forwarded_port 2>/dev/null);
-                  if [ -n "$P" ]; then
-                    cur=$(curl -s http://localhost:8080/api/v2/app/preferences | sed -n 's/.*"listen_port":\([0-9]*\).*/\1/p');
+                  P=$(cat /tmp/gluetun/forwarded_port 2>/dev/null | tr -d '[:space:]');
+                  if [ -n "$P" ] && [ "$P" != "0" ]; then
+                    cur=$(curl -fs --max-time 5 http://localhost:8080/api/v2/app/preferences 2>/dev/null | sed -n 's/.*"listen_port":\([0-9]*\).*/\1/p');
                     if [ "$P" != "$cur" ]; then
-                      curl -s -d "json={\"listen_port\":$P}" http://localhost:8080/api/v2/app/setPreferences >/dev/null 2>&1 && echo "synced listen_port=$P";
+                      curl -fs --max-time 5 -d "json={\"listen_port\":$P}" http://localhost:8080/api/v2/app/setPreferences >/dev/null 2>&1 \
+                        && curl -fs --max-time 8 -d "hashes=all" http://localhost:8080/api/v2/torrents/reannounce >/dev/null 2>&1 \
+                        && echo "synced listen_port=$P";
                     fi;
                   fi;
-                  sleep 60;
+                  sleep 10;
                 done
     service:
       app:
