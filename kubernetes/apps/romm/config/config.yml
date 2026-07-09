@@ -20,6 +20,96 @@ exclude:
         - "*(Unl)*"
 filesystem:
   roms_folder: roms
+emulatorjs:
+  controls:
+    fceumm: &two_button_nintendo
+      0:
+        0: { value2: BUTTON_1 }
+        2: { value2: SELECT }
+        3: { value2: START }
+        4: { value2: DPAD_UP }
+        5: { value2: DPAD_DOWN }
+        6: { value2: DPAD_LEFT }
+        7: { value2: DPAD_RIGHT }
+        8: { value2: BUTTON_2 }
+    nestopia: *two_button_nintendo
+    gambatte: *two_button_nintendo
+    mednafen_pce: *two_button_nintendo
+    smsplus: *two_button_nintendo
+    mgba: &four_button_nintendo
+      0:
+        0: { value2: BUTTON_1 }
+        1: { value2: BUTTON_3 }
+        2: { value2: SELECT }
+        3: { value2: START }
+        4: { value2: DPAD_UP }
+        5: { value2: DPAD_DOWN }
+        6: { value2: DPAD_LEFT }
+        7: { value2: DPAD_RIGHT }
+        8: { value2: BUTTON_2 }
+        9: { value2: BUTTON_4 }
+        10: { value2: LEFT_TOP_SHOULDER }
+        11: { value2: RIGHT_TOP_SHOULDER }
+    snes9x: *four_button_nintendo
+    melonds: *four_button_nintendo
+    desmume: *four_button_nintendo
+    desmume2015: *four_button_nintendo
+    ppsspp: &playstation_portable
+      0:
+        0: { value2: BUTTON_1 }
+        1: { value2: BUTTON_3 }
+        2: { value2: SELECT }
+        3: { value2: START }
+        4: { value2: DPAD_UP }
+        5: { value2: DPAD_DOWN }
+        6: { value2: DPAD_LEFT }
+        7: { value2: DPAD_RIGHT }
+        8: { value2: BUTTON_2 }
+        9: { value2: BUTTON_4 }
+        10: { value2: LEFT_TOP_SHOULDER }
+        11: { value2: RIGHT_TOP_SHOULDER }
+        16: { value2: "LEFT_STICK_X:1" }
+        17: { value2: "LEFT_STICK_X:-1" }
+        18: { value2: "LEFT_STICK_Y:1" }
+        19: { value2: "LEFT_STICK_Y:-1" }
+    pcsx_rearmed: *playstation_portable
+    mednafen_psx_hw: *playstation_portable
+    genesis_plus_gx: &sega_six_button
+      0:
+        0: { value2: BUTTON_1 }
+        1: { value2: BUTTON_3 }
+        2: { value2: SELECT }
+        3: { value2: START }
+        4: { value2: DPAD_UP }
+        5: { value2: DPAD_DOWN }
+        6: { value2: DPAD_LEFT }
+        7: { value2: DPAD_RIGHT }
+        8: { value2: BUTTON_2 }
+        9: { value2: BUTTON_4 }
+        10: { value2: LEFT_TOP_SHOULDER }
+        11: { value2: RIGHT_TOP_SHOULDER }
+    picodrive: *sega_six_button
+    mupen64plus_next: &n64_standard
+      0:
+        0: { value2: BUTTON_2 }
+        1: { value2: BUTTON_1 }
+        3: { value2: START }
+        4: { value2: DPAD_UP }
+        5: { value2: DPAD_DOWN }
+        6: { value2: DPAD_LEFT }
+        7: { value2: DPAD_RIGHT }
+        10: { value2: LEFT_TOP_SHOULDER }
+        11: { value2: RIGHT_TOP_SHOULDER }
+        12: { value2: LEFT_BOTTOM_SHOULDER }
+        16: { value2: "LEFT_STICK_X:1" }
+        17: { value2: "LEFT_STICK_X:-1" }
+        18: { value2: "LEFT_STICK_Y:1" }
+        19: { value2: "LEFT_STICK_Y:-1" }
+        20: { value2: "RIGHT_STICK_X:1" }
+        21: { value2: "RIGHT_STICK_X:-1" }
+        22: { value2: "RIGHT_STICK_Y:1" }
+        23: { value2: "RIGHT_STICK_Y:-1" }
+    parallel_n64: *n64_standard
 scan:
   priority:
     metadata:
