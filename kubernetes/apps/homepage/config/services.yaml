@@ -188,16 +188,12 @@
       href: http://192.168.86.10:8088/dashboard/
       icon: traefik.png
       description: Reverse proxy (mediaserver)
-      widget:
-        type: traefik
-        url: http://192.168.86.10:8088
+      siteMonitor: http://192.168.86.10:8088/api/overview
   - Traefik (thor):
       href: http://192.168.86.11:8088/dashboard/
       icon: traefik.png
       description: Reverse proxy (thor)
-      widget:
-        type: traefik
-        url: http://192.168.86.11:8088
+      siteMonitor: http://192.168.86.11:8088/api/overview
   # One tile aggregates "updates available" counts across the LAN WUD instances
   # (ms/nas/thor) via the wud-aggregator service; per-host WUD UIs (incl. pi) are
   # the compact bookmark chips in bookmarks.yaml.
