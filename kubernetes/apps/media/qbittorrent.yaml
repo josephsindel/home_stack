@@ -77,21 +77,44 @@ spec:
                   failureThreshold: 12
           # Syncs gluetun's Proton-forwarded port -> qBittorrent listen port.
           # Reads the shared port file; sets via the localhost API (auth bypassed).
+          # PF watchdog: Proton's NAT-PMP port-forward loop can wedge while the
+          # tunnel itself stays healthy (port file empty/0 indefinitely; happened
+          # 2026-07-15, sat dead 3 days). If PF is dead for WATCHDOG_TICKS
+          # consecutive 10s ticks, bounce the VPN via gluetun's control server
+          # (pod netns survives, so qBittorrent keeps running) and force a
+          # listen-port resync + reannounce once a port comes back.
           port-sync:
             image:
               repository: curlimages/curl
               tag: latest
+            env:
+              WATCHDOG_TICKS: "30" # 30 x 10s = 5 min
+              CTRL_APIKEY:
+                valueFrom:
+                  secretKeyRef: { name: gluetun-wg, key: CONTROL_SERVER_APIKEY }
             command: ["/bin/sh", "-c"]
             args:
               - |
+                PF_DEAD=0; FORCE=0;
                 while true; do
                   P=$(cat /tmp/gluetun/forwarded_port 2>/dev/null | tr -d '[:space:]');
                   if [ -n "$P" ] && [ "$P" != "0" ]; then
+                    PF_DEAD=0;
                     cur=$(curl -fs --max-time 5 http://localhost:8080/api/v2/app/preferences 2>/dev/null | sed -n 's/.*"listen_port":\([0-9]*\).*/\1/p');
-                    if [ "$P" != "$cur" ]; then
+                    if [ "$P" != "$cur" ] || [ "$FORCE" = "1" ]; then
                       curl -fs --max-time 5 -d "json={\"listen_port\":$P}" http://localhost:8080/api/v2/app/setPreferences >/dev/null 2>&1 \
                         && curl -fs --max-time 8 -d "hashes=all" http://localhost:8080/api/v2/torrents/reannounce >/dev/null 2>&1 \
-                        && echo "synced listen_port=$P";
+                        && { echo "synced listen_port=$P"; FORCE=0; };
+                    fi;
+                  else
+                    PF_DEAD=$((PF_DEAD+1));
+                    if [ "$PF_DEAD" -ge "${WATCHDOG_TICKS:-30}" ]; then
+                      echo "watchdog: PF dead ~$((PF_DEAD*10))s, restarting VPN via control server";
+                      curl -fs --max-time 10 -X PUT -H "X-API-Key: $CTRL_APIKEY" -d '{"status":"stopped"}' http://localhost:8000/v1/openvpn/status;
+                      sleep 5;
+                      curl -fs --max-time 10 -X PUT -H "X-API-Key: $CTRL_APIKEY" -d '{"status":"running"}' http://localhost:8000/v1/openvpn/status;
+                      PF_DEAD=0; FORCE=1;
+                      sleep 50;
                     fi;
                   fi;
                   sleep 10;
@@ -138,6 +161,18 @@ spec:
           qbittorrent:
             gluetun:
               - path: /dev/net/tun
+      # Control-server auth (gluetun v3.40+ deprecates unauthenticated routes);
+      # role/apikey consumed by the port-sync watchdog.
+      gluetun-auth:
+        enabled: true
+        type: secret
+        name: gluetun-wg
+        advancedMounts:
+          qbittorrent:
+            gluetun:
+              - path: /gluetun/auth/config.toml
+                subPath: auth-config.toml
+                readOnly: true
       # Shared scratch so port-sync can read gluetun's forwarded_port file.
       gluetun-data:
         enabled: true

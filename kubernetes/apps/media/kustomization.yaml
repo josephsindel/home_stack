@@ -14,3 +14,4 @@ resources:
   - unpackerr.yaml
   - qbittorrent.yaml
   - tdarr.yaml
+  - image-refresh.yaml

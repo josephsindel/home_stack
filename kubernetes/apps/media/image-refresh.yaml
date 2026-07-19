@@ -1,0 +1,85 @@
+# Weekly image refresh for the media namespace. Every app here runs a floating
+# tag (:latest), which only re-pulls when a pod is recreated — Sonarr once sat a
+# month stale because nothing ever restarted it. This CronJob performs the k8s
+# equivalent of `kubectl rollout restart` on every deployment in the namespace
+# (patches the pod-template restartedAt annotation via the API server with a
+# scoped ServiceAccount — no kubectl image needed, so no Docker Hub pulls
+# beyond curlimages/curl which the qbittorrent pod already uses).
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: image-refresh
+  namespace: media
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: image-refresh
+  namespace: media
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: image-refresh
+  namespace: media
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: image-refresh
+subjects:
+  - kind: ServiceAccount
+    name: image-refresh
+    namespace: media
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: image-refresh
+  namespace: media
+spec:
+  schedule: "0 5 * * 1" # Mondays 05:00
+  timeZone: America/Los_Angeles
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: 900
+      template:
+        spec:
+          serviceAccountName: image-refresh
+          restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 100
+            seccompProfile: { type: RuntimeDefault }
+          containers:
+            - name: refresh
+              image: curlimages/curl:latest
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities: { drop: ["ALL"] }
+              command: ["/bin/sh", "-c"]
+              args:
+                - |
+                  set -eu
+                  TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+                  CA=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+                  API=https://kubernetes.default.svc
+                  NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+                  DEPLOYS=$(curl -fsS --cacert "$CA" -H "Authorization: Bearer $TOKEN" \
+                    "$API/apis/apps/v1/namespaces/media/deployments" \
+                    | grep -o '"metadata":{"name":"[^"]*"' | sed 's/.*"name":"//;s/"//')
+                  for d in $DEPLOYS; do
+                    echo "restarting $d"
+                    curl -fsS -o /dev/null --cacert "$CA" -H "Authorization: Bearer $TOKEN" \
+                      -X PATCH -H "Content-Type: application/strategic-merge-patch+json" \
+                      -d "{\"spec\":{\"template\":{\"metadata\":{\"annotations\":{\"kubectl.kubernetes.io/restartedAt\":\"$NOW\"}}}}}" \
+                      "$API/apis/apps/v1/namespaces/media/deployments/$d"
+                    sleep 20 # stagger so the node doesn't pull/restart everything at once
+                  done
+                  echo "refresh complete: $DEPLOYS"
