@@ -110,9 +110,9 @@ spec:
                     PF_DEAD=$((PF_DEAD+1));
                     if [ "$PF_DEAD" -ge "${WATCHDOG_TICKS:-30}" ]; then
                       echo "watchdog: PF dead ~$((PF_DEAD*10))s, restarting VPN via control server";
-                      curl -fs --max-time 10 -X PUT -H "X-API-Key: $CTRL_APIKEY" -d '{"status":"stopped"}' http://localhost:8000/v1/openvpn/status;
+                      curl -fs --max-time 10 -X PUT -H "X-API-Key: $CTRL_APIKEY" -d '{"status":"stopped"}' http://localhost:8000/v1/vpn/status;
                       sleep 5;
-                      curl -fs --max-time 10 -X PUT -H "X-API-Key: $CTRL_APIKEY" -d '{"status":"running"}' http://localhost:8000/v1/openvpn/status;
+                      curl -fs --max-time 10 -X PUT -H "X-API-Key: $CTRL_APIKEY" -d '{"status":"running"}' http://localhost:8000/v1/vpn/status;
                       PF_DEAD=0; FORCE=1;
                       sleep 50;
                     fi;
