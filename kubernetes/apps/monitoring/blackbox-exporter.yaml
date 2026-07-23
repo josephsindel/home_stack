@@ -1,0 +1,92 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: blackbox-exporter
+  namespace: monitoring
+spec:
+  interval: 1h
+  install:
+    remediation: { retries: 3 }
+  upgrade:
+    remediation: { retries: 3 }
+  chart:
+    spec:
+      chart: prometheus-blackbox-exporter
+      version: "11.13.0"
+      sourceRef:
+        kind: HelmRepository
+        name: prometheus-community
+        namespace: flux-system
+  values:
+    fullnameOverride: blackbox-exporter
+    config:
+      modules:
+        http_2xx:
+          prober: http
+          timeout: 8s
+          http:
+            preferred_ip_protocol: ip4
+            follow_redirects: true
+---
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMProbe
+metadata:
+  name: home-stack-lan-http
+  namespace: monitoring
+spec:
+  jobName: home-stack-lan-http
+  interval: 30s
+  scrapeTimeout: 10s
+  module: http_2xx
+  vmProberSpec:
+    url: blackbox-exporter.monitoring.svc:9115
+    scheme: http
+    path: /probe
+  targets:
+    static:
+      labels:
+        stack: home
+      targets:
+        - http://192.168.86.235/
+        - http://192.168.86.237:8265/api/v2/status
+        - http://192.168.86.248:8989/sonarr
+        - http://192.168.86.249:7878/radarr
+        - http://192.168.86.250:9696/prowlarr
+        - http://192.168.86.251:6767/
+        - http://192.168.86.252:8080/
+        - http://192.168.86.253:8080/
+        - http://192.168.86.254/api/health
+---
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMRule
+metadata:
+  name: home-stack-service-alerts
+  namespace: monitoring
+spec:
+  groups:
+    - name: home-stack-service-alerts
+      rules:
+        - alert: HomeStackLANServiceProbeFailed
+          expr: probe_success{job="home-stack-lan-http"} == 0
+          for: 2m
+          labels:
+            severity: page
+          annotations:
+            summary: "LAN HTTP probe failed for {{ $labels.instance }}"
+            description: "Blackbox exporter cannot reach {{ $labels.instance }} from the monitoring namespace."
+        - alert: HomeStackMediaDeploymentUnavailable
+          expr: kube_deployment_status_replicas_available{namespace="media", deployment=~"tdarr|sonarr|radarr|prowlarr|qbittorrent|sabnzbd|bazarr|unpackerr|flaresolverr"} < 1
+          for: 5m
+          labels:
+            severity: page
+          annotations:
+            summary: "Media deployment {{ $labels.deployment }} has no available replicas"
+            description: "Kubernetes reports zero available replicas for {{ $labels.namespace }}/{{ $labels.deployment }}."
+        - alert: HomeStackMediaRestartStorm
+          expr: increase(kube_pod_container_status_restarts_total{namespace="media", pod=~"tdarr.*|sonarr.*|radarr.*|prowlarr.*|qbittorrent.*|sabnzbd.*|bazarr.*|unpackerr.*|flaresolverr.*"}[15m]) >= 3
+          for: 0m
+          labels:
+            severity: page
+          annotations:
+            summary: "Media pod {{ $labels.pod }} is restarting repeatedly"
+            description: "{{ $labels.namespace }}/{{ $labels.pod }} container {{ $labels.container }} restarted at least three times in 15 minutes."

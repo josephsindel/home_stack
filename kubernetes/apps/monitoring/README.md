@@ -9,6 +9,7 @@ dashboards, `ServiceMonitor`/`PrometheusRule`-equivalent CRDs all work).
 | Component | Chart | What it is |
 |---|---|---|
 | `vm-k8s-stack` | `victoria-metrics-k8s-stack` 0.84.0 | VMSingle (TSDB, 30d) + vmagent + vmalert + vmalertmanager + Grafana + kube-state-metrics + node-exporter, via victoria-metrics-operator |
+| `blackbox-exporter` | `prometheus-blackbox-exporter` 11.13.0 | HTTP probing for LAN-facing home-stack services, scraped through `VMProbe/home-stack-lan-http` |
 | `victoria-logs` | `victoria-logs-single` 0.13.8 | Log backend (30d), PVC-backed, no S3. Service `victorialogs:9428` |
 | `alloy` | `alloy` 1.10.0 | Log shipper DaemonSet (Promtail successor), collects via K8s API → VictoriaLogs |
 
@@ -97,19 +98,29 @@ To enable:
    `kubeControllerManager.enabled: true`, `kubeScheduler.enabled: true`, and for
    etcd `kubeEtcd.enabled: true` with an http endpoint on `:2381`. Commit.
 
-## Alerting — disabled (vmalert evaluates, nothing routes)
+## Alerting
 
-Alertmanager is **disabled** (`alertmanager.enabled: false`); vmalert still
-evaluates rules (visible in its UI) but has a blackhole notifier
-(`vmalert.spec.extraArgs.notifier.blackhole: "true"`), so nothing is delivered.
-The `Watchdog` alert fires permanently by design (dead-man's-switch) — harmless
-with no receiver.
+Alertmanager is enabled and mounted with `monitoring-secrets`. Delivered alerts
+route to the `discord` receiver, which reads
+`/etc/vm/secrets/monitoring-secrets/DISCORD_WEBHOOK_URL` via
+`webhook_url_file`; the `Watchdog` dead-man's-switch is intentionally routed to
+`blackhole` to avoid permanent noise.
 
-To wire a real channel:
+The chart-generated VMAlertmanager name is shortened with
+`alertmanager.name: am`. Without that, the operator-generated StatefulSet label
+for the default release name exceeds Kubernetes' 63-byte label value limit.
 
-1. Set `alertmanager.enabled: true` and add `spec.secrets: [monitoring-secrets]`.
-2. Remove the vmalert `notifier.blackhole` arg (vmalert auto-targets alertmanager).
-3. Put the webhook in `monitoring-secrets` (`DISCORD_WEBHOOK_URL` placeholder is
-   there), re-encrypt, and add a `discord`/`ntfy`/`pushover` receiver under
-   `alertmanager.config` reading it via `webhook_url_file`
-   (`/etc/vm/secrets/monitoring-secrets/DISCORD_WEBHOOK_URL`).
+Home-stack service reachability is covered by `blackbox-exporter.yaml`:
+
+- `VMProbe/home-stack-lan-http` probes the LAN HTTP endpoints for Homepage,
+  Tdarr, Sonarr, Radarr, Prowlarr, Bazarr, SABnzbd, qBittorrent, and Grafana.
+- `VMRule/home-stack-service-alerts` pages on failed LAN probes, unavailable
+  media deployments, and media pod restart storms.
+
+Quick checks:
+
+```sh
+kubectl -n monitoring get vmalertmanager,vmprobe,vmrule
+kubectl -n monitoring exec vmsingle-vm-k8s-stack-victoria-metrics-k8s-stack-d6f77476c54mjd -- \
+  wget -qO- 'http://127.0.0.1:8428/api/v1/query?query=probe_success%7Bjob%3D%22home-stack-lan-http%22%7D'
+```

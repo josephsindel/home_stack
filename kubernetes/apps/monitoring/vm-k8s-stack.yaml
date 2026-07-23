@@ -51,23 +51,36 @@ spec:
       enabled: true
 
     # --- Recording/alerting rule evaluator -----------------------------------
-    # Alertmanager is disabled (alerting deferred), so vmalert has no notifier;
-    # the chart requires an explicit blackhole notifier in that case. Rules still
-    # evaluate (visible in vmalert UI) — they just route nowhere until a real
-    # alertmanager/channel is wired.
     vmalert:
       enabled: true
       spec:
-        extraArgs:
-          notifier.blackhole: "true"
+        extraArgs: {}
 
-    # --- Alertmanager: DISABLED for now. Alerting is deferred until a real
-    # channel is wired, and an enabled-but-unrouted alertmanager was just extra
-    # failure surface. To turn it on later: set enabled: true, mount the SOPS
-    # secret (spec.secrets: [monitoring-secrets]), and add a discord/ntfy/pushover
-    # receiver reading the webhook via *_url_file. See README.
+    # --- Alertmanager --------------------------------------------------------
     alertmanager:
-      enabled: false
+      enabled: true
+      # Keep the generated VMAlertmanager/StatefulSet labels under the Kubernetes
+      # 63-byte label value limit.
+      name: am
+      spec:
+        secrets: [monitoring-secrets]
+      config:
+        route:
+          receiver: discord
+          group_by: ["alertname", "namespace", "service"]
+          group_wait: 30s
+          group_interval: 5m
+          repeat_interval: 4h
+          routes:
+            - receiver: blackhole
+              matchers:
+                - alertname="Watchdog"
+        receivers:
+          - name: blackhole
+          - name: discord
+            discord_configs:
+              - webhook_url_file: /etc/vm/secrets/monitoring-secrets/DISCORD_WEBHOOK_URL
+                send_resolved: true
 
     # --- Default alert rules. Control-plane scrape is disabled below (Talos),
     # so a few control-plane alerts may be noisy until you apply the Talos

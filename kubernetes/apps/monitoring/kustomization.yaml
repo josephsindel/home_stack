@@ -5,6 +5,7 @@ resources:
   - repository.yaml
   - secret-monitoring.sops.yaml
   - vm-k8s-stack.yaml
+  - blackbox-exporter.yaml
   - victoria-logs.yaml
   - alloy.yaml
   - snmp-exporter.yaml
