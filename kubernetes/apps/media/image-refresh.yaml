@@ -71,9 +71,22 @@ spec:
                   CA=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
                   API=https://kubernetes.default.svc
                   NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-                  DEPLOYS=$(curl -fsS --cacert "$CA" -H "Authorization: Bearer $TOKEN" \
-                    "$API/apis/apps/v1/namespaces/media/deployments" \
-                    | grep -o '"metadata":{"name":"[^"]*"' | sed 's/.*"name":"//;s/"//')
+                  # The API server pretty-prints its JSON when the User-Agent starts
+                  # with "curl", which breaks the compact-JSON parse below and yielded
+                  # an empty list (a silent no-op) from 2026-07 to 2026-09. -A and
+                  # pretty=false each force compact output; both are set deliberately.
+                  # Fetch to a file so a curl failure fails the job instead of being
+                  # masked by the exit status of the last stage of a pipeline.
+                  curl -fsS -A image-refresh --cacert "$CA" -H "Authorization: Bearer $TOKEN" \
+                    -o /tmp/deployments.json \
+                    "$API/apis/apps/v1/namespaces/media/deployments?pretty=false"
+                  DEPLOYS=$(grep -o '"metadata":{"name":"[^"]*"' /tmp/deployments.json \
+                    | sed 's/.*"name":"//;s/"//')
+                  if [ -z "$DEPLOYS" ]; then
+                    echo "ERROR: parsed zero deployments from the API response." >&2
+                    echo "Refusing to exit 0 on a no-op refresh." >&2
+                    exit 1
+                  fi
                   for d in $DEPLOYS; do
                     echo "restarting $d"
                     curl -fsS -o /dev/null --cacert "$CA" -H "Authorization: Bearer $TOKEN" \
