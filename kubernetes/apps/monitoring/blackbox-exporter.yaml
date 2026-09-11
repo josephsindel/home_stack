@@ -40,6 +40,20 @@ spec:
             validate_answer_rrs:
               fail_if_none_matches_regexp:
                 - '.*\tIN\tA\t.*'
+        # Pi-hole pair: blocking is on and gravity is populated (a broken or
+        # empty gravity DB still resolves fine, so dns_resolve can't see it).
+        dns_blocked:
+          prober: dns
+          timeout: 5s
+          dns:
+            transport_protocol: udp
+            preferred_ip_protocol: ip4
+            query_name: doubleclick.net
+            query_type: A
+            valid_rcodes: [NOERROR]
+            validate_answer_rrs:
+              fail_if_none_matches_regexp:
+                - '.*\tIN\tA\t0\.0\.0\.0$'
 ---
 apiVersion: operator.victoriametrics.com/v1beta1
 kind: VMProbe
@@ -82,6 +96,28 @@ spec:
   interval: 30s
   scrapeTimeout: 10s
   module: dns_resolve
+  vmProberSpec:
+    url: blackbox-exporter.monitoring.svc:9115
+    scheme: http
+    path: /probe
+  targets:
+    static:
+      labels:
+        stack: home
+      targets:
+        - 192.168.86.10:53
+        - 192.168.86.27:53
+---
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMProbe
+metadata:
+  name: home-stack-dns-blocked
+  namespace: monitoring
+spec:
+  jobName: home-stack-dns-blocked
+  interval: 60s
+  scrapeTimeout: 10s
+  module: dns_blocked
   vmProberSpec:
     url: blackbox-exporter.monitoring.svc:9115
     scheme: http

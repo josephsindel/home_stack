@@ -51,7 +51,7 @@ spec:
             - name: SYNC_CONFIG_DNS
               value: "true"
             - name: SYNC_CONFIG_DNS_EXCLUDE
-              value: "listeningMode,interface,upstreams,revServers"
+              value: "listeningMode,interface,upstreams,revServers,reply"
             - name: SYNC_CONFIG_RESOLVER
               value: "true"
             - name: SYNC_CONFIG_DATABASE
