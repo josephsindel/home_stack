@@ -27,6 +27,19 @@ spec:
           http:
             preferred_ip_protocol: ip4
             follow_redirects: true
+        # Pi-hole pair: the resolver answers a real upstream lookup.
+        dns_resolve:
+          prober: dns
+          timeout: 5s
+          dns:
+            transport_protocol: udp
+            preferred_ip_protocol: ip4
+            query_name: cloudflare.com
+            query_type: A
+            valid_rcodes: [NOERROR]
+            validate_answer_rrs:
+              fail_if_none_matches_regexp:
+                - '.*\tIN\tA\t.*'
 ---
 apiVersion: operator.victoriametrics.com/v1beta1
 kind: VMProbe
@@ -56,6 +69,30 @@ spec:
         - http://192.168.86.252:8080/
         - http://192.168.86.253:8080/
         - http://192.168.86.254/api/health
+---
+# Pi-hole pair: primary on mediaserver (Docker), secondary hostNetwork on
+# home-worker-1. See kubernetes/apps/pihole/pihole.yaml.
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMProbe
+metadata:
+  name: home-stack-dns
+  namespace: monitoring
+spec:
+  jobName: home-stack-dns
+  interval: 30s
+  scrapeTimeout: 10s
+  module: dns_resolve
+  vmProberSpec:
+    url: blackbox-exporter.monitoring.svc:9115
+    scheme: http
+    path: /probe
+  targets:
+    static:
+      labels:
+        stack: home
+      targets:
+        - 192.168.86.10:53
+        - 192.168.86.27:53
 ---
 apiVersion: operator.victoriametrics.com/v1beta1
 kind: VMRule
@@ -90,3 +127,27 @@ spec:
           annotations:
             summary: "Media pod {{ $labels.pod }} is restarting repeatedly"
             description: "{{ $labels.namespace }}/{{ $labels.pod }} container {{ $labels.container }} restarted at least three times in 15 minutes."
+        - alert: HomeStackPiholeResolverDown
+          expr: probe_success{job=~"home-stack-dns.*"} == 0
+          for: 2m
+          labels:
+            severity: page
+          annotations:
+            summary: "Pi-hole {{ $labels.instance }} failed probe {{ $labels.job }}"
+            description: "Clients fall back to the other Pi-hole, but DNS redundancy is gone until {{ $labels.instance }} recovers."
+        - alert: HomeStackPiholeAllResolversDown
+          expr: max(probe_success{job="home-stack-dns"}) == 0
+          for: 1m
+          labels:
+            severity: page
+          annotations:
+            summary: "Both Pi-hole resolvers are down - household DNS outage"
+            description: "Neither 192.168.86.10 nor 192.168.86.27 answers DNS. Emergency rollback: set UniFi Trusted DHCP DNS back to 192.168.86.1."
+        - alert: HomeStackPiholeDeploymentUnavailable
+          expr: kube_deployment_status_replicas_available{namespace="pihole"} < 1
+          for: 5m
+          labels:
+            severity: page
+          annotations:
+            summary: "pihole/{{ $labels.deployment }} has no available replicas"
+            description: "Secondary Pi-hole or nebula-sync is not running; the secondary stops answering or stops receiving config from the primary."

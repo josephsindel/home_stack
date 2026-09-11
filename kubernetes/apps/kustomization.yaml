@@ -13,3 +13,4 @@ resources:
   - reloader
   - romm
   - tailscale-operator
+  - pihole

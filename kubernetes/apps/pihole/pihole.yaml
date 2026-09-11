@@ -1,0 +1,122 @@
+# Pi-hole SECONDARY. The primary runs on the mediaserver (192.168.86.10, Docker,
+# home-infra mediaserver/services/dockerstack). UniFi DHCP hands out both, so
+# either one can be down (upgrade, node reboot, bad release) without a
+# household DNS outage.
+#
+# Why hostNetwork on home-worker-1 instead of a Cilium LoadBalancer IP:
+# L2-announced LB IPs are held through Kubernetes Leases, and this cluster has a
+# single control plane. An API-server outage (e.g. a Talos upgrade of
+# home-control-1) would drop every LB IP at once. A hostNetwork pod keeps
+# answering on 192.168.86.27 regardless of control-plane or Cilium LB state,
+# and sees real client IPs (no SNAT).
+#
+# Talos hostDNS already binds 127.0.0.53:53 and 169.254.116.108:53, so FTL must
+# not bind the wildcard: listeningMode NONE + explicit listen-address lines.
+#
+# Lists, allow/deny domains, groups, clients and local DNS records are copied
+# FROM the primary by nebula-sync (nebula-sync.yaml). Edit in the primary's UI;
+# edits made here are overwritten. Settings set via FTLCONF_ env are read-only
+# in the UI on both instances and are the git-declared baseline.
+#
+# Upgrades: bump THIS tag first, confirm the home-stack-dns probes stay green,
+# then bump the primary's tag in home-infra. Never bump both at once.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pihole-etc
+  namespace: pihole
+spec:
+  storageClassName: local-path
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pihole
+  namespace: pihole
+spec:
+  replicas: 1
+  strategy:
+    # hostNetwork :53 on one node - old and new pods cannot overlap.
+    type: Recreate
+  selector:
+    matchLabels:
+      app: pihole
+  template:
+    metadata:
+      labels:
+        app: pihole
+    spec:
+      hostNetwork: true
+      # Node resolver (Talos hostDNS -> 1.1.1.1) for gravity list downloads,
+      # not CoreDNS.
+      dnsPolicy: Default
+      nodeSelector:
+        kubernetes.io/hostname: home-worker-1
+      # Household DNS: don't get evicted under node memory pressure.
+      priorityClassName: system-cluster-critical
+      containers:
+        - name: pihole
+          image: docker.io/pihole/pihole:2026.07.2
+          env:
+            - name: TZ
+              value: America/Los_Angeles
+            - name: FTLCONF_webserver_api_password
+              valueFrom:
+                secretKeyRef:
+                  name: pihole-secret
+                  key: FTLCONF_webserver_api_password
+            - name: FTLCONF_webserver_port
+              value: "8081"
+            - name: FTLCONF_dns_listeningMode
+              value: NONE
+            - name: FTLCONF_misc_dnsmasq_lines
+              value: "listen-address=127.0.0.1,192.168.86.27;bind-interfaces"
+            # Keep these identical to the primary's compose environment.
+            - name: FTLCONF_dns_upstreams
+              value: "1.1.1.1;9.9.9.9"
+            - name: FTLCONF_dns_revServers
+              value: "true,192.168.86.0/24,192.168.86.1,home.arpa"
+            # FTL's NTP server would bind :123 on the node; not wanted here.
+            - name: FTLCONF_ntp_ipv4_active
+              value: "false"
+            - name: FTLCONF_ntp_ipv6_active
+              value: "false"
+            - name: FTLCONF_ntp_sync_active
+              value: "false"
+          # pi.hole is answered by FTL itself, so these probes check the
+          # resolver is alive without depending on the upstreams.
+          startupProbe:
+            exec:
+              command: ["dig", "+short", "+tries=1", "+time=2", "@127.0.0.1", "pi.hole"]
+            periodSeconds: 10
+            timeoutSeconds: 5
+            # First start downloads and builds gravity before FTL answers.
+            failureThreshold: 60
+          readinessProbe:
+            exec:
+              command: ["dig", "+short", "+tries=1", "+time=2", "@127.0.0.1", "pi.hole"]
+            periodSeconds: 15
+            timeoutSeconds: 5
+          livenessProbe:
+            exec:
+              command: ["dig", "+short", "+tries=1", "+time=2", "@127.0.0.1", "pi.hole"]
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 4
+          resources:
+            requests:
+              cpu: 50m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+          volumeMounts:
+            - name: etc
+              mountPath: /etc/pihole
+      volumes:
+        - name: etc
+          persistentVolumeClaim:
+            claimName: pihole-etc

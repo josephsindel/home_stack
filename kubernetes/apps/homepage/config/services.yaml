@@ -240,10 +240,24 @@
       href: https://192.168.86.1/network/default/devices
       icon: mdi-access-point-network
       description: Adopted Wi-Fi 7 AP - 192.168.86.165
-  - Pi-hole:
-      href: http://100.102.47.66:8081/admin/
+  - Pi-hole (primary):
+      href: http://192.168.86.10:8081/admin/
       icon: pi-hole.png
-      description: Network ad blocker (DNS sinkhole) - livingroom-pi
+      description: DNS ad blocker - mediaserver. Make changes here.
+      widget:
+        type: pihole
+        url: http://192.168.86.10:8081
+        version: 6
+        key: "{{HOMEPAGE_VAR_PIHOLE_KEY}}"
+  - Pi-hole (secondary):
+      href: http://192.168.86.27:8081/admin/
+      icon: pi-hole.png
+      description: DNS ad blocker - k8s home-worker-1, synced from primary
+      widget:
+        type: pihole
+        url: http://192.168.86.27:8081
+        version: 6
+        key: "{{HOMEPAGE_VAR_PIHOLE_KEY}}"
 
 - Storage:
   - DSM:
