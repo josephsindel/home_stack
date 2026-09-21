@@ -93,7 +93,9 @@ metadata:
   namespace: monitoring
 spec:
   jobName: home-stack-dns
-  interval: 30s
+  # Every probe is a real query in Pi-hole's stats. At 30s this job was a top-10
+  # "client" and skewed the dashboard; 60s still satisfies the 2m alert.
+  interval: 60s
   scrapeTimeout: 10s
   module: dns_resolve
   vmProberSpec:
@@ -115,7 +117,10 @@ metadata:
   namespace: monitoring
 spec:
   jobName: home-stack-dns-blocked
-  interval: 60s
+  # doubleclick.net queries land in "top blocked domains" and were drowning out
+  # real traffic (97% of the secondary's blocks). Gravity health changes slowly,
+  # so 5m is plenty.
+  interval: 300s
   scrapeTimeout: 10s
   module: dns_blocked
   vmProberSpec:
@@ -164,13 +169,23 @@ spec:
             summary: "Media pod {{ $labels.pod }} is restarting repeatedly"
             description: "{{ $labels.namespace }}/{{ $labels.pod }} container {{ $labels.container }} restarted at least three times in 15 minutes."
         - alert: HomeStackPiholeResolverDown
-          expr: probe_success{job=~"home-stack-dns.*"} == 0
+          expr: probe_success{job="home-stack-dns"} == 0
           for: 2m
           labels:
             severity: page
           annotations:
-            summary: "Pi-hole {{ $labels.instance }} failed probe {{ $labels.job }}"
+            summary: "Pi-hole {{ $labels.instance }} is not answering DNS"
             description: "Clients fall back to the other Pi-hole, but DNS redundancy is gone until {{ $labels.instance }} recovers."
+        # Separate, slower alert: a gravity rebuild can briefly let the canary
+        # domain resolve, and that is not an outage.
+        - alert: HomeStackPiholeBlockingBroken
+          expr: probe_success{job="home-stack-dns-blocked"} == 0
+          for: 15m
+          labels:
+            severity: page
+          annotations:
+            summary: "Pi-hole {{ $labels.instance }} is resolving but not blocking"
+            description: "doubleclick.net no longer returns 0.0.0.0 on {{ $labels.instance }} - gravity is likely empty or corrupt, the failure mode that killed the old Pi-hole."
         - alert: HomeStackPiholeAllResolversDown
           expr: max(probe_success{job="home-stack-dns"}) == 0
           for: 1m

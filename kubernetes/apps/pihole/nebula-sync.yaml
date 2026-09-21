@@ -40,8 +40,13 @@ spec:
                 secretKeyRef: { name: pihole-secret, key: REPLICAS }
             - name: TZ
               value: America/Los_Angeles
+            # Every sync does a Teleporter import, which forces an FTL restart
+            # on the secondary (~1.5s of downtime + cache flush). At */30 that
+            # was 48 restarts/day and cost at least one failed DNS probe, to
+            # propagate list changes that happen maybe monthly. Every 6h is the
+            # balance; restart this deployment for an immediate sync.
             - name: CRON
-              value: "*/30 * * * *"
+              value: "0 */6 * * *"
             - name: FULL_SYNC
               value: "false"
             # Rebuild gravity on the secondary after lists change. Gravity
