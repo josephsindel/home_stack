@@ -101,10 +101,34 @@ To enable:
 ## Alerting
 
 Alertmanager is enabled and mounted with `monitoring-secrets`. Delivered alerts
-route to the `discord` receiver, which reads
-`/etc/vm/secrets/monitoring-secrets/DISCORD_WEBHOOK_URL` via
-`webhook_url_file`; the `Watchdog` dead-man's-switch is intentionally routed to
-`blackhole` to avoid permanent noise.
+go to the `email` receiver: Gmail SMTP (`smtp.gmail.com:587`, STARTTLS) as
+joesindel@gmail.com to joesindel@gmail.com, with the Google app password read
+from `/etc/vm/secrets/monitoring-secrets/GMAIL_APP_PASSWORD`. Subject is
+`[home-stack FIRING|RESOLVED] <alertname> <instance>`. The `Watchdog`
+dead-man's-switch is intentionally routed to `blackhole` to avoid permanent noise.
+
+Why email (2026-11-02): the previous `discord` receiver read
+`DISCORD_WEBHOOK_URL`, which was still the placeholder `REPLACE`, so Discord
+answered HTTP 400 to every notification and `HomeStackPiholeResolverDown`
+fired unseen from 2026-10-14 18:45Z until the primary Pi-hole was found dead
+by hand on 2026-11-02. Nothing checks that notifications are delivered, so
+after touching a receiver:
+
+```sh
+kubectl -n monitoring logs vmalertmanager-am-0 -c alertmanager | grep -i "notify for alerts failed"
+# send a test alert and expect an email within ~1 min
+kubectl -n monitoring exec vmalertmanager-am-0 -c alertmanager -- wget -qO- --post-data \
+  '[{"labels":{"alertname":"TestEmailRoute","severity":"page"},"annotations":{"summary":"test"}}]' \
+  --header 'Content-Type: application/json' http://127.0.0.1:9093/api/v2/alerts
+```
+
+To rotate the app password (Google Account → Security → App passwords):
+
+```sh
+SOPS_AGE_KEY_FILE=~/Documents/repos/home-infra/.secrets/sops-age.key \
+  sops set kubernetes/apps/monitoring/secret-monitoring.sops.yaml \
+  '["stringData"]["GMAIL_APP_PASSWORD"]' '"<16 chars, no spaces>"'
+```
 
 The chart-generated VMAlertmanager name is shortened with
 `alertmanager.name: am`. Without that, the operator-generated StatefulSet label

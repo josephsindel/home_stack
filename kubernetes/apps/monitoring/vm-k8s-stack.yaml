@@ -64,9 +64,23 @@ spec:
       name: am
       spec:
         secrets: [monitoring-secrets]
+      # Receiver history: the original "discord" receiver pointed at a
+      # DISCORD_WEBHOOK_URL that was never replaced ("REPLACE"), so every
+      # notification 2026-07..2026-11 failed with HTTP 400 and nobody saw
+      # HomeStackPiholeResolverDown fire for 19 days (2026-10-14 18:45Z to
+      # 2026-11-02). Email via Gmail SMTP is now the only receiver; the app
+      # password lives in monitoring-secrets/GMAIL_APP_PASSWORD. Watch
+      # `kubectl -n monitoring logs vmalertmanager-am-0 -c alertmanager` for
+      # "Notify for alerts failed" after any receiver change.
       config:
+        global:
+          smtp_smarthost: smtp.gmail.com:587
+          smtp_from: joesindel@gmail.com
+          smtp_auth_username: joesindel@gmail.com
+          smtp_auth_password_file: /etc/vm/secrets/monitoring-secrets/GMAIL_APP_PASSWORD
+          smtp_require_tls: true
         route:
-          receiver: discord
+          receiver: email
           group_by: ["alertname", "namespace", "service"]
           group_wait: 30s
           group_interval: 5m
@@ -77,10 +91,12 @@ spec:
                 - alertname="Watchdog"
         receivers:
           - name: blackhole
-          - name: discord
-            discord_configs:
-              - webhook_url_file: /etc/vm/secrets/monitoring-secrets/DISCORD_WEBHOOK_URL
+          - name: email
+            email_configs:
+              - to: joesindel@gmail.com
                 send_resolved: true
+                headers:
+                  subject: '[home-stack {{ .Status | toUpper }}] {{ .CommonLabels.alertname }}{{ if .CommonLabels.instance }} {{ .CommonLabels.instance }}{{ end }}'
 
     # --- Default alert rules. Control-plane scrape is disabled below (Talos),
     # so a few control-plane alerts may be noisy until you apply the Talos
