@@ -101,33 +101,38 @@ To enable:
 ## Alerting
 
 Alertmanager is enabled and mounted with `monitoring-secrets`. Delivered alerts
-go to the `email` receiver: Gmail SMTP (`smtp.gmail.com:587`, STARTTLS) as
-joesindel@gmail.com to joesindel@gmail.com, with the Google app password read
-from `/etc/vm/secrets/monitoring-secrets/GMAIL_APP_PASSWORD`. Subject is
-`[home-stack FIRING|RESOLVED] <alertname> <instance>`. The `Watchdog`
-dead-man's-switch is intentionally routed to `blackhole` to avoid permanent noise.
+go to the `ha-push` receiver: a webhook into Home Assistant on mediaserver
+(`http://192.168.86.10:8123/api/webhook/<id>`, read from
+`/etc/vm/secrets/monitoring-secrets/HA_WEBHOOK_URL`). HA's automation
+"Alertmanager alerts to phone" (`/etc/homeassistant/automations.yaml`, id
+`alertmanager_to_phone`) pushes each firing/resolved group to Joe's phone
+through the companion app and mirrors it as an HA persistent notification.
+The `Watchdog` dead-man's-switch is intentionally routed to `blackhole` to
+avoid permanent noise.
 
-Why email (2026-11-02): the previous `discord` receiver read
+Why this route (2026-11-02): the previous `discord` receiver read
 `DISCORD_WEBHOOK_URL`, which was still the placeholder `REPLACE`, so Discord
 answered HTTP 400 to every notification and `HomeStackPiholeResolverDown`
 fired unseen from 2026-10-14 18:45Z until the primary Pi-hole was found dead
-by hand on 2026-11-02. Nothing checks that notifications are delivered, so
-after touching a receiver:
+by hand on 2026-11-02. No credentials are needed for the HA webhook (the id is
+the secret), and nothing checks that notifications are delivered, so after
+touching a receiver:
 
 ```sh
 kubectl -n monitoring logs vmalertmanager-am-0 -c alertmanager | grep -i "notify for alerts failed"
-# send a test alert and expect an email within ~1 min
+# send a test alert and expect a phone push within ~1 min
 kubectl -n monitoring exec vmalertmanager-am-0 -c alertmanager -- wget -qO- --post-data \
-  '[{"labels":{"alertname":"TestEmailRoute","severity":"page"},"annotations":{"summary":"test"}}]' \
+  '[{"labels":{"alertname":"TestPhoneRoute","severity":"page"},"annotations":{"summary":"test"}}]' \
   --header 'Content-Type: application/json' http://127.0.0.1:9093/api/v2/alerts
 ```
 
-To rotate the app password (Google Account → Security → App passwords):
+To rotate the webhook id: pick a new random id, change it in the HA
+automation, then
 
 ```sh
 SOPS_AGE_KEY_FILE=~/Documents/repos/home-infra/.secrets/sops-age.key \
   sops set kubernetes/apps/monitoring/secret-monitoring.sops.yaml \
-  '["stringData"]["GMAIL_APP_PASSWORD"]' '"<16 chars, no spaces>"'
+  '["stringData"]["HA_WEBHOOK_URL"]' '"http://192.168.86.10:8123/api/webhook/<id>"'
 ```
 
 The chart-generated VMAlertmanager name is shortened with
