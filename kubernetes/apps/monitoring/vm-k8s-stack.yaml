@@ -37,6 +37,10 @@ spec:
       enabled: true
       spec:
         retentionPeriod: "30d"
+        extraArgs:
+          # Thor's vLLM exporter emits vllm:cache_config_info with 42 labels; the
+          # default 40 rejected it every scrape (RowsRejectedOnIngestion + TooManyLogs).
+          maxLabelsPerTimeseries: "60"
         # VMSingle.spec.storage IS a PersistentVolumeClaimSpec directly — no
         # volumeClaimTemplate wrapper (that's VMCluster/StatefulSet land).
         storage:
