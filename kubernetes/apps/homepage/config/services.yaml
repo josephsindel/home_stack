@@ -161,7 +161,7 @@
       icon: home-assistant.png
       description: Smart-home hub (mediaserver, host network)
   - DAKboard:
-      href: http://100.102.47.66/
+      href: http://192.168.86.13/
       icon: mdi-monitor-dashboard
       description: Living room display (livingroom-pi)
 
@@ -274,10 +274,6 @@
       description: All filesystems on NAS
 
 - SSH:
-  - livingroom-pi:
-      href: ssh://joe@livingroom-pi.tailc89bc2.ts.net
-      icon: mdi-console
-      description: SSH to living room Pi
   - mediaserver:
       href: ssh://joe@mediaserver.tailc89bc2.ts.net
       icon: mdi-console

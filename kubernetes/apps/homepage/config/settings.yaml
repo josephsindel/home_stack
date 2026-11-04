@@ -43,7 +43,7 @@ layout:
     icon: mdi-nas
   SSH:
     style: row
-    columns: 4
+    columns: 3
     header: true
     icon: mdi-console
 quicklaunch:
