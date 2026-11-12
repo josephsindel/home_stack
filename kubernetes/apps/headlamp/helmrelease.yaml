@@ -21,6 +21,7 @@ spec:
       pluginsDir: /build/plugins
       # Keep browser sessions valid for a week. The chart renders larger
       # integers in scientific notation, which Headlamp's int parser rejects.
+      sessionTTL: 604800
       # Sign-in is by token (2026-11-11 security review): the UI used to run as
       # the in-cluster service account with cluster-admin and no login, which
       # gave every LAN device the cluster. Get a token with:
