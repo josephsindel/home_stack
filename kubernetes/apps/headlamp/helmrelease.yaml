@@ -21,13 +21,14 @@ spec:
       pluginsDir: /build/plugins
       # Keep browser sessions valid for a week. The chart renders larger
       # integers in scientific notation, which Headlamp's int parser rejects.
-      # The login token itself comes from the in-cluster service account below,
-      # so you should not need a freshly generated token every time you open Headlamp.
-      sessionTTL: 604800
-      # Homelab-only tradeoff: the LoadBalancer is on the trusted LAN and this
-      # avoids the repeated token-login flow. Do not expose Headlamp publicly
-      # with this enabled.
-      unsafeUseServiceAccountToken: true
+      # Sign-in is by token (2026-11-11 security review): the UI used to run as
+      # the in-cluster service account with cluster-admin and no login, which
+      # gave every LAN device the cluster. Get a token with:
+      #   kubectl -n headlamp create token headlamp-login --duration=720h | pbcopy
+      unsafeUseServiceAccountToken: false
+    # The pod's own service account gets no cluster role; see rbac.yaml.
+    clusterRoleBinding:
+      create: false
     initContainers:
       - name: headlamp-plugins
         image: ghcr.io/headlamp-k8s/headlamp-plugin-flux:latest

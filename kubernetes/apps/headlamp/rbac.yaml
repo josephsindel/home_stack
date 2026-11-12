@@ -1,15 +1,21 @@
-# Homelab: bind Headlamp's chart-created ServiceAccount to cluster-admin.
-# The HelmRelease enables unsafe service-account-token auth for this LAN-only lab,
-# so Headlamp uses this account for UI access without repeated token prompts.
+# Headlamp sign-in account. The Headlamp pod itself holds no cluster role;
+# a person signs in with a short-lived token for this account:
+#   kubectl -n headlamp create token headlamp-login --duration=720h | pbcopy
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: headlamp-login
+  namespace: headlamp
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: headlamp-admin
+  name: headlamp-login-admin
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: cluster-admin
 subjects:
   - kind: ServiceAccount
-    name: headlamp
+    name: headlamp-login
     namespace: headlamp
