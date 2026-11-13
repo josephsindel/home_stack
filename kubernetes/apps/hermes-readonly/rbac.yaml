@@ -1,0 +1,36 @@
+# Read-only cluster access for the Hermes agent on Thor (home-infra repo,
+# skills/hermes/home-lab). Bound to the built-in `view` ClusterRole: get/list/
+# watch on workloads, pods/log, events, configmaps. NO Secrets, no exec, no
+# writes.
+#
+# The token Secret below is long-lived because an agent can't re-mint a
+# short-lived token the way a person signs in to Headlamp. Revoke or rotate by
+# deleting the Secret (Kubernetes re-issues it on the next Flux reconcile).
+# The kubeconfig lives on Thor at /home/joe/.kube/config (not in git).
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: hermes-readonly
+  namespace: agents
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: hermes-readonly-token
+  namespace: agents
+  annotations:
+    kubernetes.io/service-account.name: hermes-readonly
+type: kubernetes.io/service-account-token
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: hermes-readonly-view
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: view
+subjects:
+  - kind: ServiceAccount
+    name: hermes-readonly
+    namespace: agents
