@@ -83,6 +83,11 @@ spec:
           # consecutive 10s ticks, bounce the VPN via gluetun's control server
           # (pod netns survives, so qBittorrent keeps running) and force a
           # listen-port resync + reannounce once a port comes back.
+          # Interface pin: qBittorrent must be bound to tun0 by name. Bound to
+          # "any", libtorrent never re-binds after the watchdog recreates tun0
+          # (2026-11-09: sat firewalled with 0 DHT nodes for 3 days, magnets
+          # stuck on metadata). Re-asserted every tick so a fresh /config PVC
+          # self-heals too. Also acts as an app-level killswitch.
           port-sync:
             image:
               repository: curlimages/curl
@@ -98,9 +103,17 @@ spec:
                 PF_DEAD=0; FORCE=0;
                 while true; do
                   P=$(cat /tmp/gluetun/forwarded_port 2>/dev/null | tr -d '[:space:]');
+                  PREFS=$(curl -fs --max-time 5 http://localhost:8080/api/v2/app/preferences 2>/dev/null);
+                  if [ -n "$PREFS" ]; then
+                    IFACE=$(echo "$PREFS" | sed -n 's/.*"current_network_interface":"\([^"]*\)".*/\1/p');
+                    if [ "$IFACE" != "tun0" ]; then
+                      curl -fs --max-time 5 -d 'json={"current_network_interface":"tun0"}' http://localhost:8080/api/v2/app/setPreferences >/dev/null 2>&1 \
+                        && echo "pinned network interface to tun0 (was '$IFACE')";
+                    fi;
+                  fi;
                   if [ -n "$P" ] && [ "$P" != "0" ]; then
                     PF_DEAD=0;
-                    cur=$(curl -fs --max-time 5 http://localhost:8080/api/v2/app/preferences 2>/dev/null | sed -n 's/.*"listen_port":\([0-9]*\).*/\1/p');
+                    cur=$(echo "$PREFS" | sed -n 's/.*"listen_port":\([0-9]*\).*/\1/p');
                     if [ "$P" != "$cur" ] || [ "$FORCE" = "1" ]; then
                       curl -fs --max-time 5 -d "json={\"listen_port\":$P}" http://localhost:8080/api/v2/app/setPreferences >/dev/null 2>&1 \
                         && curl -fs --max-time 8 -d "hashes=all" http://localhost:8080/api/v2/torrents/reannounce >/dev/null 2>&1 \
