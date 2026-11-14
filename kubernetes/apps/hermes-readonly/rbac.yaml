@@ -1,7 +1,7 @@
-# Read-only cluster access for the Hermes agent on Thor (home-infra repo,
+# Base read access for the Hermes agent on Thor (home-infra repo,
 # skills/hermes/home-lab). Bound to the built-in `view` ClusterRole: get/list/
 # watch on workloads, pods/log, events, configmaps. NO Secrets, no exec, no
-# writes.
+# writes. operator.yaml adds restart/scale, pod delete and Job create (still no Secrets or exec).
 #
 # The token Secret below is long-lived because an agent can't re-mint a
 # short-lived token the way a person signs in to Headlamp. Revoke or rotate by

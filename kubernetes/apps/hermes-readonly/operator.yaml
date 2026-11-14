@@ -1,0 +1,48 @@
+# Operator rights for the agent on Thor (Joe, 2026-11-12: "set it up so it has full access";
+# 2026-11-14: "fix all this", after it could not restart qbittorrent or list nodes).
+# On top of `view`: read cluster-scoped basics (nodes, namespaces, PVs, storage classes),
+# restart/scale workloads, delete pods so they recreate, run a Job.
+# Still NO Secrets, NO exec/attach/port-forward, NO deleting Deployments/Namespaces/PVCs.
+# Revoke: delete this file and its kustomization entry (Flux prunes the role and binding).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: hermes-operator
+rules:
+  - apiGroups: [""]
+    resources: ["nodes", "namespaces", "persistentvolumes"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["storageclasses"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["metrics.k8s.io"]
+    resources: ["nodes", "pods"]
+    verbs: ["get", "list"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets", "daemonsets"]
+    verbs: ["get", "list", "watch", "patch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments/scale", "statefulsets/scale"]
+    verbs: ["get", "patch", "update"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch", "delete"]
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["get", "list", "watch", "create"]
+  - apiGroups: ["batch"]
+    resources: ["cronjobs"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: hermes-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: hermes-operator
+subjects:
+  - kind: ServiceAccount
+    name: hermes-readonly
+    namespace: agents
