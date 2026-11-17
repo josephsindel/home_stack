@@ -28,6 +28,15 @@ spec:
         annotations:
           reloader.stakater.com/auto: "true"
         strategy: Recreate
+        # Run as couchdb (5984) from the start: the Synology NFS export squashes
+        # every uid to 1024:100, so the entrypoint's root-only chown of the data
+        # dir fails and (set -e) kills the container. Non-root skips that branch;
+        # the share's dirs are 0777, so CouchDB can still write.
+        pod:
+          securityContext:
+            runAsUser: 5984
+            runAsGroup: 5984
+            runAsNonRoot: true
         containers:
           app:
             image:

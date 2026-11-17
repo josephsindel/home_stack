@@ -3,6 +3,5 @@ kind: Namespace
 metadata:
   name: livesync
   labels:
-    # CouchDB's entrypoint runs as root to chown its data dir, then drops to
-    # the couchdb user; baseline permits that (restricted would block it).
+    # CouchDB runs as uid 5984 (see helmrelease); baseline is enough.
     pod-security.kubernetes.io/enforce: baseline
