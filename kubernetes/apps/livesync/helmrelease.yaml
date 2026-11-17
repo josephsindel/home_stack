@@ -1,0 +1,73 @@
+# Self-hosted LiveSync backend: CouchDB for Joe's life-ops Obsidian vault.
+# Clients (Mac, iPhone, iPad) and the livesync-bridge on Thor talk to it over
+# the tailnet only (Tailscale Ingress below): ClusterIP service, no LAN LB, no
+# public ingress. Vault content is end-to-end encrypted by LiveSync, so CouchDB
+# only ever stores ciphertext.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: couchdb
+  namespace: livesync
+spec:
+  interval: 1h
+  install:
+    remediation: { retries: 3 }
+  upgrade:
+    remediation: { retries: 3 }
+  chart:
+    spec:
+      chart: app-template
+      version: "5.0.1"
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  values:
+    controllers:
+      couchdb:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        strategy: Recreate
+        containers:
+          app:
+            image:
+              repository: couchdb
+              tag: "3.5.3"
+            env:
+              TZ: America/Los_Angeles
+              NODENAME: couchdb.livesync.svc
+              COUCHDB_USER:
+                valueFrom:
+                  secretKeyRef: { name: couchdb-secret, key: COUCHDB_USER }
+              COUCHDB_PASSWORD:
+                valueFrom:
+                  secretKeyRef: { name: couchdb-secret, key: COUCHDB_PASSWORD }
+              COUCHDB_SECRET:
+                valueFrom:
+                  secretKeyRef: { name: couchdb-secret, key: COUCHDB_SECRET }
+            probes:
+              liveness:  { enabled: true, custom: true, spec: { httpGet: { path: /_up, port: 5984 }, initialDelaySeconds: 30, periodSeconds: 30 } }
+              readiness: { enabled: true, custom: true, spec: { httpGet: { path: /_up, port: 5984 }, initialDelaySeconds: 10, periodSeconds: 10 } }
+            resources:
+              requests: { cpu: 50m, memory: 128Mi }
+              limits: { memory: 1Gi }
+    service:
+      # key == release name -> Service "couchdb" (what the Ingress expects).
+      couchdb:
+        controller: couchdb
+        ports:
+          http: { port: 5984 }
+    persistence:
+      data:
+        enabled: true
+        existingClaim: couchdb-data
+        globalMounts:
+          - path: /opt/couchdb/data
+      config:
+        enabled: true
+        type: configMap
+        name: couchdb-livesync-config
+        globalMounts:
+          - path: /opt/couchdb/etc/default.d/livesync.ini
+            subPath: livesync.ini
+            readOnly: true

@@ -1,0 +1,17 @@
+# Tailscale Ingress -> https://livesync.tailc89bc2.ts.net (tailnet only; serve-
+# based like homepage/romm — L4 expose doesn't work on this Cilium KPR cluster).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: livesync
+  namespace: livesync
+spec:
+  ingressClassName: tailscale
+  defaultBackend:
+    service:
+      name: couchdb
+      port:
+        number: 5984
+  tls:
+    - hosts:
+        - livesync

@@ -1,0 +1,16 @@
+# CouchDB data on the Synology (dynamic NFS CSI volume). CouchDB's append-only
+# files tolerate NFS (hard mount); unlike MariaDB/SQLite elsewhere in this repo
+# it holds no state that can't be rebuilt — the files on Thor are the source of
+# truth and the bridge can re-push them. Retain policy keeps the data on delete.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: couchdb-data
+  namespace: livesync
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: nfs-synology
+  resources:
+    requests:
+      storage: 5Gi
