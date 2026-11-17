@@ -55,8 +55,9 @@ spec:
                 valueFrom:
                   secretKeyRef: { name: couchdb-secret, key: COUCHDB_SECRET }
             probes:
-              liveness:  { enabled: true, custom: true, spec: { httpGet: { path: /_up, port: 5984 }, initialDelaySeconds: 30, periodSeconds: 30 } }
-              readiness: { enabled: true, custom: true, spec: { httpGet: { path: /_up, port: 5984 }, initialDelaySeconds: 10, periodSeconds: 10 } }
+              # TCP, not /_up: require_valid_user makes every anonymous HTTP path 401.
+              liveness:  { enabled: true, custom: true, spec: { tcpSocket: { port: 5984 }, initialDelaySeconds: 30, periodSeconds: 30 } }
+              readiness: { enabled: true, custom: true, spec: { tcpSocket: { port: 5984 }, initialDelaySeconds: 10, periodSeconds: 10 } }
             resources:
               requests: { cpu: 50m, memory: 128Mi }
               limits: { memory: 1Gi }
